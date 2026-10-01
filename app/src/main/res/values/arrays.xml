@@ -1,0 +1,17 @@
+<resources>
+    <string-array name="xposed_scope">
+        <item>com.oculus.systemux</item>
+        <item>com.oculus.panelapp.settings</item>
+        <item>com.oculus.panelapp.quicksettings</item>
+        <item>com.oculus.vrshell</item>
+        <item>com.oculus.horizon</item>
+        <item>com.oculus.panelapp.library</item>
+        <item>com.oculus.metacam</item>
+        <item>com.oculus.hzosgallery</item>
+        <item>com.oculus.store</item>
+        <item>com.oculus.tv</item>
+        <item>com.oculus.helpcenter</item>
+        <item>com.oculus.systemutilities</item>
+        <item>com.oculus.socialplatform</item>
+    </string-array>
+</resources>

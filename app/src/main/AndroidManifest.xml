@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <queries>
+        <package android:name="com.oculus.systemux" />
+        <package android:name="com.oculus.panelapp.settings" />
+        <package android:name="com.oculus.panelapp.quicksettings" />
+        <package android:name="com.oculus.vrshell" />
+        <package android:name="com.oculus.horizon" />
+        <package android:name="com.oculus.panelapp.library" />
+        <package android:name="com.oculus.metacam" />
+        <package android:name="com.oculus.hzosgallery" />
+        <package android:name="com.oculus.store" />
+        <package android:name="com.oculus.tv" />
+        <package android:name="com.oculus.helpcenter" />
+        <package android:name="com.oculus.systemutilities" />
+        <package android:name="com.oculus.socialplatform" />
+    </queries>
+
+    <application
+        android:label="UX Patcher"
+        android:allowBackup="false"
+        android:hasCode="true">
+
+        <meta-data android:name="xposedmodule"      android:value="true" />
+        <meta-data android:name="xposedminversion"  android:value="53" />
+        <!-- lets hooked processes read this module's settings (colour, hide profile) via XSharedPreferences -->
+        <meta-data android:name="xposedsharedprefs" android:value="true" />
+        <meta-data android:name="xposeddescription" android:value="Custom AMOLED background colour, raises the dock pin limit, widens the dock, hides the profile icon." />
+        <meta-data android:name="xposedscope"       android:resource="@array/xposed_scope" />
+
+        <activity
+            android:name=".MainActivity"
+            android:label="UX Patcher"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+</manifest>

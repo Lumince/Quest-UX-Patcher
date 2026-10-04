@@ -13,7 +13,10 @@ Allows for customizing colors for SystemUX (Dock UI & Nav UI), Raises the max pi
 4. If `Zygisk: Yes` isn't shown, go into Magisk settings and toggle Zygisk off then on. Then open Singularity → AIO Tweaks → Utils → Fix Magisk Zygisk → Apply
 5. Root your device again and install `UXPatcher.apk`
 6. Open Vector, enable UX Patcher, and select all the apps it prompts you to scope
-7. Open UX Patcher, accept the Magisk root prompt, and press **Kill All Processes**
+7. Open UX Patcher, accept the Magisk root prompt, and press **Kill Processes** \
+**If you have issues with your UI disappearing, run this command in shell ( I am actively looking into the issue )** \
+`adb shell am force-stop com.oculus.vrshell`
+
 
 ## Trouble finding target apps?
 Tap on the module \

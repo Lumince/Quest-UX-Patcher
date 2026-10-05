@@ -164,11 +164,12 @@ public final class BatteryPercentHook {
             fStart.setInt(plp, idBat);
             fEnd.setInt(plp, fEnd.getInt(blp));
             for (Field f : fHit) f.setInt(plp, f.getInt(blp));
-            plp.setMarginStart(gap);
-            plp.setMarginEnd(0);
+            int endPad = Math.round(Config.DOCK_BATTERY_PERCENT_END_PAD_DP * density);
             ViewGroup.MarginLayoutParams bm = (ViewGroup.MarginLayoutParams) blp;
             int oldEndMargin = bm.getMarginEnd();
-            bm.setMarginEnd(oldEndMargin + extra);
+            plp.setMarginStart(gap);
+            plp.setMarginEnd(oldEndMargin + endPad);
+            bm.setMarginEnd(oldEndMargin + extra + endPad);
 
             root.addView(pct, plp);
             pct.setLayoutParams(plp);                 // resolves start/end for the layout direction
@@ -191,16 +192,31 @@ public final class BatteryPercentHook {
             }
             if (tv.isEmpty()) Log.w(TAG, "BATTERY: no fixed-width view to widen (all wrap / match constraint)");
             final int[] passes = {0};
+            final View batV = bat, pillV = pill;
+            final int textNeed = textW;
+            final int[] reserved = {textW};
+            final int[] extraGrow = {0};
             final Runnable apply = new Runnable() { @Override public void run() {
                 int delta = timeV == null ? 0 : Math.max(0, timeV.getWidth() - baseTimeW);
                 for (int k = 0; k < tv.size(); k++) {
                     View x = tv.get(k);
                     ViewGroup.LayoutParams xl = x.getLayoutParams();
-                    int want = tb.get(k) + grow + delta;
+                    int want = tb.get(k) + grow + delta + extraGrow[0];
                     if (xl != null && xl.width != want) { xl.width = want; x.setLayoutParams(xl); }
                 }
             }};
             apply.run();
+            pct.setTag(new Runnable() { @Override public void run() {
+                int w = (int) Math.ceil(pct.getPaint().measureText(pct.getText().toString()));
+                int d = w - reserved[0];
+                if (d == 0) return;
+                reserved[0] = w;
+                ViewGroup.MarginLayoutParams m = (ViewGroup.MarginLayoutParams) batV.getLayoutParams();
+                m.setMarginEnd(m.getMarginEnd() + d);
+                batV.setLayoutParams(m);
+                extraGrow[0] += d;
+                apply.run();
+            }});
             root.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
                 @Override public void onLayoutChange(View view, int l, int t, int r, int b, int ol, int ot, int or, int ob) {
                     apply.run();
@@ -209,13 +225,17 @@ public final class BatteryPercentHook {
                         for (int k = 0; k < tv.size(); k++) sb.append(" | ").append(tv.get(k).getClass().getSimpleName()).append(' ')
                                 .append(tv.get(k).getWidth()).append('/').append(tv.get(k).getLayoutParams().width);
                         sb.append(" | time ").append(timeV == null ? -1 : timeV.getWidth()).append(" (base ").append(baseTimeW)
-                                .append(") | pct ").append(pct.getWidth());
+                                .append(") | pct ").append(pct.getWidth()).append(" (text needs ").append(textNeed).append(")");
+                        sb.append(" | pct ").append(pct.getLeft()).append("..").append(pct.getRight())
+                                .append(" battery right ").append(batV.getRight())
+                                .append(" pill right ").append(pillV == null ? -1 : pillV.getRight())
+                                .append(" status width ").append(view.getWidth());
                         Log.i(TAG, sb.toString());
                     }
                 }
             });
-            Log.i(TAG, "BATTERY: added the percentage next to the battery icon (text " + textW + "px + gap " + gap + "px, battery end margin "
-                    + oldEndMargin + " -> " + (oldEndMargin + extra) + ", widening " + tv.size() + " view(s) by " + grow + "px + clock growth)");
+            Log.i(TAG, "BATTERY: added the percentage next to the battery icon (text " + textW + "px + gap " + gap + "px + end pad " + endPad
+                    + "px, battery end margin " + oldEndMargin + " -> " + (oldEndMargin + extra + endPad) + ", widening " + tv.size() + " view(s) by " + grow + "px + clock growth)");
 
             final BroadcastReceiver rcv = new BroadcastReceiver() {
                 @Override public void onReceive(Context c, Intent i) { update(pct, i); }
@@ -250,6 +270,8 @@ public final class BatteryPercentHook {
         String s = (level * 100 / scale) + "%";
         if (!s.contentEquals(pct.getText())) {
             pct.setText(s);
+            Object resize = pct.getTag();
+            if (resize instanceof Runnable) pct.post((Runnable) resize);
             if (sLogs++ < 4) Log.i(TAG, "BATTERY: " + s);
         }
     }

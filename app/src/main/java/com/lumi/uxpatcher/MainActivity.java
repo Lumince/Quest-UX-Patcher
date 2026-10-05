@@ -93,7 +93,7 @@ public class MainActivity extends Activity {
         buildDockCard(content);
 
         killBtn = new Button(this);
-        killBtn.setText("Kill All Processes");
+        killBtn.setText("Kill Processes");
         killBtn.setTextColor(COLOR_TEXT);
         killBtn.setAllCaps(false);
         killBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);

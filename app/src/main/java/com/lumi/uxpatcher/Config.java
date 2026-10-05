@@ -61,7 +61,7 @@ public final class Config {
 
     // ── Dock ──────────────────────────────────────────────────────────────────
     /** Extra dp of dock left padding (hide-profile), on top of the measured right-hand gap */
-    public static final int DOCK_LEFT_PAD_EXTRA_DP = 8;
+    public static final int DOCK_LEFT_PAD_EXTRA_DP = 12;
     /** How many apps can be pinned to the dock */
     public static final int DOCK_PIN_LIMIT = 10;
 
@@ -80,6 +80,9 @@ public final class Config {
 
     /** Show the battery percentage next to the dock's battery icon */
     public static final boolean DOCK_BATTERY_PERCENT = true;
+
+    /** Space after the battery percentage so it isn't cut off */
+    public static final int DOCK_BATTERY_PERCENT_END_PAD_DP = 2;
 
     /** Keep the Library's "Unknown Sources" tab always visible */
     public static final boolean LIBRARY_UNKNOWN_TAB_ALWAYS = true;

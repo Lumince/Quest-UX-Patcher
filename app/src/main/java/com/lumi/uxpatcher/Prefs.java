@@ -14,11 +14,11 @@ import static com.lumi.uxpatcher.Config.TAG;
  *   pin_limit_on   boolean, default true. Raise the dock pin limit to Config.DOCK_PIN_LIMIT.
  *   unknown_tab_on boolean, default true. Keep the Library's "Unknown Sources" tab visible.
  *
- * Two channels, both written on every save. Channel 1 wins, then channel 2, then the defaults.
+ * Two channels, both written on every save. Channel 2 wins when it has a value, then channel 1, then the defaults.
  *   1. SharedPreferences file FILE (world readable), read with XSharedPreferences.
  *   2. Settings.Global keys G_*, written through su. Read lazily: no Context exists at load time.
  *
- * A change applies after KILL ALL PROCESSES. Logcat: "CONFIG: ...".
+ * A change applies after KILL PROCESSES. Logcat: "CONFIG: ...".
  */
 public final class Prefs {
     private Prefs() {}
@@ -129,8 +129,6 @@ public final class Prefs {
                 if (c != null || h != null || ac != null || tx != null || pl != null || ut != null) {
                     xspHadValues = true;
                     source = "XSharedPreferences";
-                    loaded = true;
-                    return;
                 }
             } catch (Throwable t) {
                 Log.w(TAG, "CONFIG: XSharedPreferences unavailable: " + t);
@@ -155,7 +153,7 @@ public final class Prefs {
             if (st != null) { try { text = Integer.parseInt(st.trim()); } catch (NumberFormatException e) { text = OFF; } }
             if (sp != null) pinLimit = !("0".equals(sp.trim()) || "false".equalsIgnoreCase(sp.trim()));
             if (su != null) unknownTab = !("0".equals(su.trim()) || "false".equalsIgnoreCase(su.trim()));
-            if (sb != null || sh != null || sa != null || st != null || sp != null || su != null) source = "Settings.Global";
+            if (sb != null || sh != null || sa != null || st != null || sp != null || su != null) { source = xspHadValues ? "Settings.Global (overrides XSharedPreferences)" : "Settings.Global"; }
             loaded = true;
             Log.i(TAG, "CONFIG: loaded bg=#" + hex(bg) + " hideProfile=" + hide
                     + " accent=" + hexOrOff(accent) + " text=" + hexOrOff(text) + " (source=" + source + ")");

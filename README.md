@@ -1,5 +1,5 @@
 # Quest UX Patcher (Vector module)
-Allows for customizing colors for SystemUX (Dock UI & Nav UI), Raises the max pinned apps on Dock UI to 10, shows the battery percentage on Dock UI, and forces the Unknown Sources tab to be visible.
+Allows for customizing colors for SystemUX (Dock UI & Nav UI), raises the max pinned apps on Dock UI to 10, shows the battery percentage on Dock UI, lets you rearrange and hide the buttons, and forces the Unknown Sources tab to be visible.
 
 ## Requirements
 * Rooted Meta Quest Headset (Pre-September 24th 2026 firmware)
@@ -14,9 +14,6 @@ Allows for customizing colors for SystemUX (Dock UI & Nav UI), Raises the max pi
 5. Root your device again and install `UXPatcher.apk`
 6. Open Vector, enable UX Patcher, and select all the apps it prompts you to scope
 7. Open UX Patcher, accept the Magisk root prompt, and press **Kill Processes** \
-**If you have issues with your UI disappearing, run this command in shell ( I am actively looking into the issue )** \
-`adb shell am force-stop com.oculus.vrshell`
-
 
 ## Trouble finding target apps?
 Tap on the module \
@@ -28,9 +25,18 @@ Then select this \
 ## App UI
 * **Background color**: pure black by default. Pick a colour and press **Set Color**, or **Reset** to go back to Black.
 * **Accent color** and **Text color**: **Default** to White.
-* **Dock**: *Hide profile icon* and *Raise pin limit to 10*.
+* **Dock**:
+  * *Raise pin limit to 10*
+  * *Hide profile icon*
+  * *Hide passthrough button*
+  * *Hide battery icon*: hides the icon and keeps the battery percentage.
+* **Dock button order**:
+  * *Library button on the left*
+  * *Apps section on the left*
+  * Drag **Profile**, **Quick settings**, **Notifications** and **Passthrough** to choose their order.
 * **Library**: *Force Unknown Sources tab visible*.
-* **Kill Processes**: restarts the target apps
+* **Kill Processes**: restarts the target apps. Press it to apply selections.
+
 ## Supported versions
 The module is setup to find the parts it needs to patch via their *shape* instead of using the obfuscated class names. This will make it so it should just continue to work on newer firmware, as long as the code its patching is still there.
 

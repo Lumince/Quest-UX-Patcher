@@ -86,8 +86,12 @@ public final class DockWidenHook {
         private long shrinkSince = 0;
         // Resize verification: vrshell ignores a resize sent while it restarts the panel, so re-send if not reached.
         private static final long VERIFY_MS = 700;
-        private static final int MAX_RETRIES = 5;
+        private static final int MAX_RETRIES = 12;
+        private static final long GIVE_UP_PAUSE_MS = 15000;
         private long lastRequestAt = 0;
+        private long gaveUpAt = 0;
+        private static final long SETTLE_MS = 400;
+        private long sigSince = 0;
         private int retries = 0;
         private int notVisibleTries = 0;
         private int lastBarWidth = -1;
@@ -141,6 +145,7 @@ public final class DockWidenHook {
                     + " overlap=" + overlap;
             if (!sig.equals(lastSig)) {
                 lastSig = sig;
+                sigSince = android.os.SystemClock.uptimeMillis();
                 Log.i(TAG, "DOCK-WIDEN: bar=" + sig + " decor=" + bar.getRootView().getWidth());
             }
 
@@ -152,16 +157,31 @@ public final class DockWidenHook {
             desired = Math.max(originalWidth, Math.min(desired, maxW));
             int current = bar.getWidth();
             // re-send if the previous request never took effect
+            long now0 = android.os.SystemClock.uptimeMillis();
+            long verifyMs = Math.min(VERIFY_MS + retries * 500L, 3000L);
             if (lastRequested > 0 && Math.abs(current - lastRequested) > 8
-                    && android.os.SystemClock.uptimeMillis() - lastRequestAt > VERIFY_MS) {
+                    && now0 - lastRequestAt > verifyMs) {
+                if (retries >= MAX_RETRIES && gaveUpAt != 0 && now0 - gaveUpAt >= GIVE_UP_PAUSE_MS) {
+                    Log.i(TAG, "DOCK-WIDEN: starting a fresh round of resize retries");
+                    retries = 0;
+                    gaveUpAt = 0;
+                }
                 if (retries < MAX_RETRIES) {
                     retries++;
                     Log.i(TAG, "DOCK-WIDEN: bar is " + current + " but asked for " + lastRequested
                             + " -- re-sending (try " + retries + ")");
+                    // vrshell may hold a stale connection: reconnect after two failed tries
+                    if (retries >= 2) DockResizer.rebind();
                     lastRequested = -1;
+                } else if (gaveUpAt == 0) {
+                    gaveUpAt = now0;
+                    Log.w(TAG, "DOCK-WIDEN: vrshell ignored " + MAX_RETRIES + " resizes (bar " + current
+                            + ", wanted " + lastRequested + "); will try again in " + (GIVE_UP_PAUSE_MS / 1000) + " s");
+                    repostEvaluate(bar, GIVE_UP_PAUSE_MS + 100);
                 }
             } else if (lastRequested > 0 && Math.abs(current - lastRequested) <= 8) {
                 retries = 0;
+                gaveUpAt = 0;
             }
             boolean grow = overflow > 2 && desired > current + 8;
             boolean shrink = overflow <= 2 && current > originalWidth && desired < current - 24;
@@ -185,6 +205,11 @@ public final class DockWidenHook {
                 shrinkTarget = -1;
             }
             if ((grow || shrink) && desired != lastRequested) {
+                long settled = android.os.SystemClock.uptimeMillis() - sigSince;
+                if (lastRequested < 0 && retries == 0 && settled < SETTLE_MS) {
+                    repostEvaluate(bar, SETTLE_MS - settled + 30);
+                    return;
+                }
                 android.app.Activity act = unwrap(bar.getContext());
                 if (act != null) {
                     lastRequested = desired;
@@ -195,7 +220,7 @@ public final class DockWidenHook {
                     Log.i(TAG, "DOCK-WIDEN: resize request " + current + " -> " + desired
                             + "x" + h + " (original=" + originalWidth + ", range=" + range + ")");
                     DockResizer.request(act, desired, h);
-                    repostEvaluate(bar, VERIFY_MS + 50);   // verify it took effect
+                    repostEvaluate(bar, Math.min(VERIFY_MS + retries * 500L, 3000L) + 50);   // verify it took effect
                 }
             }
         }

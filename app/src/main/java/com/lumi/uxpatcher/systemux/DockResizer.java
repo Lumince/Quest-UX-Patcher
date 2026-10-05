@@ -29,6 +29,14 @@ import static com.lumi.uxpatcher.Config.TAG;
             bind();
         }
 
+        /** Reconnects to vrshell's resize service when it keeps ignoring resizes */
+        static synchronized void rebind() {
+            if (appCtx == null) return;
+            binder = null;
+            binding = false;
+            bind();
+        }
+
         static synchronized void request(android.app.Activity act, int w, int h) {
             owner = new java.lang.ref.WeakReference<>(act);
             pendingW = w;

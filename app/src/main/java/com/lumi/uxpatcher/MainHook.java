@@ -11,6 +11,8 @@ import com.lumi.uxpatcher.amoled.ThemeHooks;
 import com.lumi.uxpatcher.library.UnknownSourcesTabHook;
 import com.lumi.uxpatcher.systemux.BatteryPercentHook;
 import com.lumi.uxpatcher.systemux.DockDropZoneHook;
+import com.lumi.uxpatcher.systemux.DockLayoutDump;
+import com.lumi.uxpatcher.systemux.DockOrderHook;
 import com.lumi.uxpatcher.systemux.DockStatus;
 import com.lumi.uxpatcher.systemux.DockPinLimitHook;
 import com.lumi.uxpatcher.systemux.DockScrollHook;
@@ -78,6 +80,8 @@ public class MainHook implements IXposedHookLoadPackage {
         Hooks.run("SCROLL", lp, DockScrollHook::install);   // also provides the width probe for DOCK-WIDEN
         Hooks.run("PIN-API", lp, PinningServiceLogger::install);
         Hooks.run("PROFILE", lp, ProfileButtonHook::install);
+        Hooks.run("DOCK-ORDER", lp, DockOrderHook::install);
+        Hooks.run("DOCK-DUMP", lp, DockLayoutDump::install);
         Hooks.run("DROPZONE", lp, DockDropZoneHook::install);
         Hooks.run("BATTERY", lp, BatteryPercentHook::install);
     }

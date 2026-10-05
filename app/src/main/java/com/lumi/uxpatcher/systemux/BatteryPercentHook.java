@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.lumi.uxpatcher.Config;
+import com.lumi.uxpatcher.Prefs;
 import com.lumi.uxpatcher.firmware.FirmwareNames;
 
 import java.lang.reflect.Constructor;
@@ -135,6 +136,12 @@ public final class BatteryPercentHook {
                     + " time=" + (time == null ? "-" : String.valueOf(((TextView) time).getText())));
             if (fStart == null || fEnd == null || fHit.isEmpty()) { Log.w(TAG, "BATTERY: could not classify the battery's constraints, nothing changed"); return; }
 
+            // Hide the icon: shrink it to 1px and narrow the pill by the same amount so the spacing stays
+            final boolean hideIcon = Prefs.hideBatteryIcon();
+            int iconW = blp0.width > 0 ? blp0.width : bat.getWidth();
+            final int iconCut = hideIcon ? Math.max(0, iconW - 1) : 0;
+            if (hideIcon) Log.i(TAG, "BATTERY: hiding the battery icon (icon " + iconW + "px, pill gets " + iconCut + "px narrower)");
+
             final TextView pct = new TextView(ctx);
             int pctId = View.generateViewId();
             pct.setId(pctId);
@@ -171,6 +178,10 @@ public final class BatteryPercentHook {
             plp.setMarginEnd(oldEndMargin + endPad);
             bm.setMarginEnd(oldEndMargin + extra + endPad);
 
+            if (hideIcon && iconCut > 0) {
+                blp.width = 1;
+                bat.setVisibility(View.INVISIBLE);
+            }
             root.addView(pct, plp);
             pct.setLayoutParams(plp);                 // resolves start/end for the layout direction
             bat.setLayoutParams(blp);
@@ -194,14 +205,17 @@ public final class BatteryPercentHook {
             final int[] passes = {0};
             final View batV = bat, pillV = pill;
             final int textNeed = textW;
-            final int[] reserved = {textW};
-            final int[] extraGrow = {0};
+            final int[] reserved = {textW};       // text width the pill has room for
+            final int[] extraGrow = {0};          // pill width change as the digits change
+            final int[] leftGrow = {0};           // extra room added left of the clock
+            final boolean[] leftDone = {false};
+            final int rightPad = oldEndMargin + endPad;   // pill end to the percentage text
             final Runnable apply = new Runnable() { @Override public void run() {
                 int delta = timeV == null ? 0 : Math.max(0, timeV.getWidth() - baseTimeW);
                 for (int k = 0; k < tv.size(); k++) {
                     View x = tv.get(k);
                     ViewGroup.LayoutParams xl = x.getLayoutParams();
-                    int want = tb.get(k) + grow + delta + extraGrow[0];
+                    int want = tb.get(k) + grow + delta + extraGrow[0] + leftGrow[0] - iconCut;
                     if (xl != null && xl.width != want) { xl.width = want; x.setLayoutParams(xl); }
                 }
             }};
@@ -220,6 +234,22 @@ public final class BatteryPercentHook {
             root.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
                 @Override public void onLayoutChange(View view, int l, int t, int r, int b, int ol, int ot, int or, int ob) {
                     apply.run();
+                    if (iconCut > 0 && batV.getVisibility() != View.INVISIBLE) batV.setVisibility(View.INVISIBLE);
+                    if (!leftDone[0] && timeV != null && pillV != null && pillV.getWidth() > 0
+                            && pillV.getLayoutParams().width == pillV.getWidth() && timeV.getLeft() > pillV.getLeft()) {
+                        leftDone[0] = true;
+                        int left0 = timeV.getLeft() - pillV.getLeft();
+                        int target = Math.min(rightPad, Math.round(Config.DOCK_CLOCK_LEFT_PAD_MAX_DP * view.getResources().getDisplayMetrics().density));
+                        int more = target - left0;
+                        Log.i(TAG, "BATTERY: pill padding left " + left0 + "px, right " + rightPad + "px, target " + target + "px");
+                        if (more > 0 && timeV.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                            ViewGroup.MarginLayoutParams tm = (ViewGroup.MarginLayoutParams) timeV.getLayoutParams();
+                            tm.setMarginStart(tm.getMarginStart() + more);
+                            timeV.setLayoutParams(tm);
+                            leftGrow[0] = more;
+                            apply.run();
+                        }
+                    }
                     if (passes[0]++ < 4) {
                         StringBuilder sb = new StringBuilder("BATTERY: widths after setup: status " + view.getWidth());
                         for (int k = 0; k < tv.size(); k++) sb.append(" | ").append(tv.get(k).getClass().getSimpleName()).append(' ')

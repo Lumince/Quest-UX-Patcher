@@ -82,7 +82,14 @@ public final class Config {
     public static final boolean DOCK_BATTERY_PERCENT = true;
 
     /** Space after the battery percentage so it isn't cut off */
-    public static final int DOCK_BATTERY_PERCENT_END_PAD_DP = 2;
+    public static final int DOCK_BATTERY_PERCENT_END_PAD_DP = 9;
+
+    /** Max extra left dp for the clock */
+    public static final int DOCK_CLOCK_LEFT_PAD_MAX_DP = 24;
+
+    /** Padding tweaks (dp) when the apps are on the left */
+    public static final int DOCK_SWAPPED_LEFT_NUDGE_DP = 0;
+    public static final int DOCK_SWAPPED_RIGHT_NUDGE_DP = 0;
 
     /** Keep the Library's "Unknown Sources" tab always visible */
     public static final boolean LIBRARY_UNKNOWN_TAB_ALWAYS = true;
@@ -96,6 +103,9 @@ public final class Config {
 
     /** Dump the view tree (tag UXPatcher-DUMP) in DUMP_PACKAGES */
     public static final boolean DEBUG_DUMP = false;
+
+    /** Debug: logs the dock's view tree */
+    public static final boolean DOCK_LAYOUT_DUMP = false;
     public static final Set<String> DUMP_PACKAGES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             SYSTEMUX_PACKAGE,
             "com.oculus.panelapp.settings",

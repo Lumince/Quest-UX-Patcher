@@ -60,6 +60,7 @@ public class MainActivity extends Activity {
     private static final int COLOR_KILL    = Color.parseColor("#C62828");
     private static final int COLOR_BUTTON2 = Color.parseColor("#2A2A44");
 
+    private static final int WIDE_DP = 700;
     private SharedPreferences prefs;
     private Button killBtn;
 
@@ -80,17 +81,34 @@ public class MainActivity extends Activity {
         scroll.setFillViewport(true);
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(20), dp(16), dp(20), dp(8));
+        final boolean wide = getResources().getConfiguration().screenWidthDp >= WIDE_DP;
+        content.setPadding(dp(wide ? 28 : 20), dp(16), dp(wide ? 28 : 20), dp(8));
         scroll.addView(content, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
         root.addView(scroll, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
 
         // background always has a colour; accent and text can be off (Meta's own)
-        new ColorCard(content, "BACKGROUND COLOR", Prefs.KEY_BG, false, 0x000000, "Reset");
-        new ColorCard(content, "ACCENT COLOR (icons, sliders)", Prefs.KEY_ACCENT, true, 0xFFFFFF, "Default");
-        new ColorCard(content, "TEXT COLOR", Prefs.KEY_TEXT, true, 0xFFFFFF, "Default");
-        buildDockCard(content);
+        LinearLayout left = content, right = content;
+        if (wide) {
+            LinearLayout columns = new LinearLayout(this);
+            columns.setOrientation(LinearLayout.HORIZONTAL);
+            columns.setBaselineAligned(false);
+            left = new LinearLayout(this);
+            left.setOrientation(LinearLayout.VERTICAL);
+            right = new LinearLayout(this);
+            right.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            llp.setMarginEnd(dp(10));
+            columns.addView(left, llp);
+            columns.addView(right, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            content.addView(columns, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
+        new ColorCard(left, "BACKGROUND COLOR", Prefs.KEY_BG, false, 0x000000, "Reset");
+        new ColorCard(left, "ACCENT COLOR (icons, sliders)", Prefs.KEY_ACCENT, true, 0xFFFFFF, "Default");
+        new ColorCard(left, "TEXT COLOR", Prefs.KEY_TEXT, true, 0xFFFFFF, "Default");
+        buildDockCard(left, right);
 
         killBtn = new Button(this);
         killBtn.setText("Kill Processes");
@@ -112,16 +130,145 @@ public class MainActivity extends Activity {
 
     // ── Cards ─────────────────────────────────────────────────────────────────────────────
 
-    private void buildDockCard(LinearLayout parent) {
-        LinearLayout card = card(parent);
+    private void buildDockCard(LinearLayout left, LinearLayout right) {
+        LinearLayout card = card(left);
         sectionLabel(card, "DOCK");
 
         prefSwitch(card, "Hide profile icon", Prefs.KEY_HIDE_PROFILE, false);
         prefSwitch(card, "Raise pin limit to " + Config.DOCK_PIN_LIMIT, Prefs.KEY_PIN_LIMIT, true);
+        prefSwitch(card, "Hide passthrough button", Prefs.KEY_HIDE_PT, false);
+        prefSwitch(card, "Hide battery icon", Prefs.KEY_HIDE_BATT_ICON, false);
 
-        LinearLayout lib = card(parent);
+        LinearLayout order = card(right);
+        sectionLabel(order, "DOCK BUTTON ORDER");
+        prefSwitch(order, "Library button on the left", Prefs.KEY_LIB_FIRST, false);
+        prefSwitch(order, "Apps section on the left", Prefs.KEY_APPS_LEFT, false);
+        buildOrderList(order);
+
+
+        LinearLayout lib = card(left);
         sectionLabel(lib, "LIBRARY");
         prefSwitch(lib, "Force Unknown Sources tab visible", Prefs.KEY_UNKNOWN_TAB, true);
+    }
+
+    // ── Dock button order (drag to rearrange) ─────────────────────────────────────────────
+
+    private static final String[] ORDER_TOKENS = {"profile", "qs", "notif", "pt"};
+    private static final String[] ORDER_NAMES = {"Profile", "Quick settings", "Notifications", "Passthrough"};
+    private final ArrayList<String> dockOrder = new ArrayList<>();
+    private LinearLayout orderList;
+
+    private void buildOrderList(LinearLayout card) {
+        TextView hint = new TextView(this);
+        hint.setText("Left to right on the dock. Drag to rearrange. Profile and Passthrough only show if their hide switches are off.");
+        hint.setTextColor(COLOR_DIM);
+        hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        card.addView(hint);
+
+        dockOrder.clear();
+        String saved = prefs.getString(Prefs.KEY_DOCK_ORDER, Prefs.DEFAULT_DOCK_ORDER);
+        for (String t : saved.split(",")) {
+            t = t.trim();
+            if (tokenIndex(t) >= 0 && !dockOrder.contains(t)) dockOrder.add(t);
+        }
+        if (!dockOrder.contains("profile")) dockOrder.add(0, "profile");
+        for (String t : ORDER_TOKENS) if (!dockOrder.contains(t)) dockOrder.add(t);
+
+        orderList = new LinearLayout(this);
+        orderList.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, dp(10), 0, 0);
+        card.addView(orderList, lp);
+        for (int i = 0; i < dockOrder.size(); i++) {
+            TextView row = new TextView(this);
+            row.setTextColor(COLOR_TEXT);
+            row.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(dp(14), dp(12), dp(14), dp(12));
+            row.setBackground(rounded(COLOR_BUTTON2, 10));
+            LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            rlp.setMargins(0, 0, 0, dp(6));
+            orderList.addView(row, rlp);
+            attachDrag(row, i);
+        }
+        refreshOrderRows();
+
+        Button reset = flatButton("Reset to default order", COLOR_BUTTON2);
+        reset.setOnClickListener(v -> {
+            dockOrder.clear();
+            dockOrder.addAll(Arrays.asList(ORDER_TOKENS));
+            refreshOrderRows();
+            saveDockOrder();
+        });
+        LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        rl.setMargins(0, dp(4), 0, 0);
+        card.addView(reset, rl);
+    }
+
+    private static int tokenIndex(String token) {
+        for (int i = 0; i < ORDER_TOKENS.length; i++) if (ORDER_TOKENS[i].equals(token)) return i;
+        return -1;
+    }
+
+    private void saveDockOrder() {
+        StringBuilder sb = new StringBuilder();
+        for (String t : dockOrder) { if (sb.length() > 0) sb.append(','); sb.append(t); }
+        prefs.edit().putString(Prefs.KEY_DOCK_ORDER, sb.toString()).apply();
+        pushToGlobal();
+        toastSaved();
+    }
+
+    private void refreshOrderRows() {
+        for (int i = 0; i < orderList.getChildCount(); i++) {
+            TextView row = (TextView) orderList.getChildAt(i);
+            row.setText("\u2630   " + ORDER_NAMES[tokenIndex(dockOrder.get(i))]);
+            row.setTranslationY(0);
+            row.setElevation(0);
+            row.setAlpha(1f);
+        }
+    }
+
+    private void attachDrag(final TextView row, final int index) {
+        final float[] downY = new float[1];
+        row.setOnTouchListener((v, ev) -> {
+            int n = orderList.getChildCount();
+            float step = row.getHeight() + dp(6);
+            float dy = ev.getRawY() - downY[0];
+            float clamped = Math.max(-index * step, Math.min((n - 1 - index) * step, dy));
+            int target = Math.max(0, Math.min(n - 1, index + Math.round(clamped / step)));
+            switch (ev.getActionMasked()) {
+                case android.view.MotionEvent.ACTION_DOWN:
+                    downY[0] = ev.getRawY();
+                    orderList.getParent().requestDisallowInterceptTouchEvent(true);
+                    row.setElevation(dp(6));
+                    row.setAlpha(0.85f);
+                    return true;
+                case android.view.MotionEvent.ACTION_MOVE:
+                    row.setTranslationY(clamped);
+                    for (int j = 0; j < n; j++) {
+                        if (j == index) continue;
+                        float shift = 0;
+                        if (j > index && j <= target) shift = -step;
+                        else if (j < index && j >= target) shift = step;
+                        orderList.getChildAt(j).setTranslationY(shift);
+                    }
+                    return true;
+                case android.view.MotionEvent.ACTION_UP:
+                case android.view.MotionEvent.ACTION_CANCEL:
+                    if (ev.getActionMasked() == android.view.MotionEvent.ACTION_UP && target != index) {
+                        String moved = dockOrder.remove(index);
+                        dockOrder.add(target, moved);
+                        saveDockOrder();
+                    }
+                    refreshOrderRows();
+                    return true;
+                default:
+                    return false;
+            }
+        });
     }
 
     /** A saved on/off switch, showing {@code def} until the user touches it */
@@ -473,9 +620,15 @@ public class MainActivity extends Activity {
         boolean hide = prefs.getBoolean(Prefs.KEY_HIDE_PROFILE, false);
         boolean pinLimit = prefs.getBoolean(Prefs.KEY_PIN_LIMIT, true);
         boolean unknownTab = prefs.getBoolean(Prefs.KEY_UNKNOWN_TAB, true);
+        String order = prefs.getString(Prefs.KEY_DOCK_ORDER, Prefs.DEFAULT_DOCK_ORDER).replaceAll("[^a-z,]", "");
         return new String[]{
                 "settings put global " + Prefs.G_PIN_LIMIT + " " + (pinLimit ? 1 : 0),
                 "settings put global " + Prefs.G_UNKNOWN_TAB + " " + (unknownTab ? 1 : 0),
+                "settings put global " + Prefs.G_DOCK_ORDER + " " + order,
+                "settings put global " + Prefs.G_APPS_LEFT + " " + (prefs.getBoolean(Prefs.KEY_APPS_LEFT, false) ? 1 : 0),
+                "settings put global " + Prefs.G_LIB_FIRST + " " + (prefs.getBoolean(Prefs.KEY_LIB_FIRST, false) ? 1 : 0),
+                "settings put global " + Prefs.G_HIDE_PT + " " + (prefs.getBoolean(Prefs.KEY_HIDE_PT, false) ? 1 : 0),
+                "settings put global " + Prefs.G_HIDE_BATT_ICON + " " + (prefs.getBoolean(Prefs.KEY_HIDE_BATT_ICON, false) ? 1 : 0),
                 "settings put global " + Prefs.G_BG + " " + bg,
                 "settings put global " + Prefs.G_ACCENT + " " + accent,
                 "settings put global " + Prefs.G_TEXT + " " + text,

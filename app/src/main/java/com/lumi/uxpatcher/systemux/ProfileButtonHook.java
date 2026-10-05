@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 
 import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
@@ -61,6 +62,76 @@ public final class ProfileButtonHook {
                     + Prefs.hideProfile() + ")");
         } catch (Throwable t) {
             Log.e(TAG, "PROFILE: install failed: " + t);
+        }
+        // Find the profile icon by id: with no account its description differs
+        try {
+            Class<?> sv = lpparam.classLoader.loadClass(FirmwareNames.SYSTEM_STATUS_VIEW);
+            XposedBridge.hookAllConstructors(sv, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) {
+                    final View v = (View) param.thisObject;
+                    if (!(v instanceof ViewGroup)) return;
+                    v.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                        private boolean done, diagnosed;
+                        private int passes;
+                        @Override
+                        public void onLayoutChange(View view, int l, int t, int r, int b,
+                                                   int ol, int ot, int or, int ob) {
+                            if (done || !Prefs.hideProfile() || !(view instanceof ViewGroup)) return;
+                            ViewGroup root = (ViewGroup) view;
+                            View btn = findProfileById(root);
+                            if (btn != null) {
+                                synchronized (HANDLED) {
+                                    if (HANDLED.put(btn, Boolean.TRUE) != null) { done = true; return; }
+                                }
+                                done = true;
+                                Log.i(TAG, "PROFILE: found profile button by id (" + btn.getClass().getSimpleName()
+                                        + ", description '" + btn.getContentDescription() + "') -> hiding (setting is on)");
+                                hideWhenLaidOut(btn);
+                            } else if (!diagnosed && root.getWidth() > 0 && ++passes >= 3) {
+                                diagnosed = true;
+                                logChildren(root);
+                            }
+                        }
+                    });
+                }
+            });
+            Log.i(TAG, "PROFILE: hooked SystemStatusView (find the profile button by id)");
+        } catch (Throwable t) {
+            Log.e(TAG, "PROFILE: install failed: " + t);
+        }
+    }
+
+    /** Profile icon targeted by id name. */
+    private static View findProfileById(ViewGroup root) {
+        try {
+            for (String name : new String[]{"profile_button_hit_target", "profile_button"}) {
+                int id = root.getResources().getIdentifier(name, "id", root.getContext().getPackageName());
+                if (id == 0) continue;
+                View v = root.findViewById(id);
+                if (v != null) return v;
+            }
+        } catch (Throwable ignored) { }
+        return null;
+    }
+
+    /** Logs the dock's child views so we can find the profile button */
+    private static void logChildren(ViewGroup root) {
+        try {
+            StringBuilder sb = new StringBuilder("PROFILE: no profile button found by id; status view children: ");
+            for (int i = 0; i < root.getChildCount() && i < 30; i++) {
+                View c = root.getChildAt(i);
+                String idName = "-";
+                try { if (c.getId() > 0) idName = root.getResources().getResourceEntryName(c.getId()); } catch (Throwable ignored) { }
+                sb.append(c.getClass().getSimpleName()).append('#').append(idName);
+                CharSequence cd = c.getContentDescription();
+                if (cd != null && cd.length() > 0) sb.append("[cd='").append(cd.length() > 40 ? cd.subSequence(0, 40) : cd).append("']");
+                if (c.getVisibility() != View.VISIBLE) sb.append("(vis=").append(c.getVisibility()).append(')');
+                sb.append(' ');
+            }
+            Log.i(TAG, sb.toString());
+        } catch (Throwable t) {
+            Log.w(TAG, "PROFILE: child list failed: " + t);
         }
     }
 

@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.View;
 
 import com.lumi.uxpatcher.amoled.Colors;
+import com.lumi.uxpatcher.amoled.PanelBackgroundHook;
 import com.lumi.uxpatcher.amoled.RecordingCanvasHook;
 import com.lumi.uxpatcher.firmware.FirmwareNames;
 
@@ -72,14 +73,46 @@ public final class ControlBarHook implements RecordingCanvasHook.Gate {
         return color;
     }
 
+    private static boolean isBarActivity(java.util.List<Class<?>> bars, Object ctx) {
+        for (Class<?> c : bars) if (c.isInstance(ctx)) return true;
+        return false;
+    }
+
+    /** True if the drawable is the background of a plain-view window bar (or of something inside one) */
+    private static boolean inBar(android.graphics.drawable.Drawable d, Class<?> barView) {
+        Object c = d.getCallback();
+        for (int i = 0; i < 4 && c instanceof android.graphics.drawable.Drawable; i++) {
+            c = ((android.graphics.drawable.Drawable) c).getCallback();
+        }
+        View v = c instanceof View ? (View) c : null;
+        android.view.ViewParent p;
+        for (int i = 0; v != null && i < 4; i++) {
+            if (barView.isInstance(v)) return true;
+            p = v.getParent();
+            v = p instanceof View ? (View) p : null;
+        }
+        return false;
+    }
+
     public static void install(final LoadPackageParam lpparam) {
+        // v78 draws the bar with plain views and an OCPanelBackgroundDrawable: fill that with the background colour
+        try {
+            final Class<?> barView = lpparam.classLoader.loadClass(FirmwareNames.CONTROL_BAR_VIEW);
+            PanelBackgroundHook.install(lpparam, d -> inBar(d, barView));
+            Log.i(TAG, "CONTROLBAR: plain-view bar found, its panel background is themed");
+        } catch (ClassNotFoundException ignored) {
+            // the bar is Compose here
+        } catch (Throwable t) {
+            Log.w(TAG, "CONTROLBAR: plain-view bar hook failed: " + t);
+        }
         try {
             // the activity classes are optional; the Presentation / display paths cover their absence
-            Class<?> baseOrNull = null;
-            try {
-                baseOrNull = lpparam.classLoader.loadClass(FirmwareNames.CONTROL_BAR_BASE_ACTIVITY);
-            } catch (ClassNotFoundException ignored) { }
-            final Class<?> base = baseOrNull;
+            final java.util.List<Class<?>> bars = new java.util.ArrayList<>();
+            for (String name : FirmwareNames.CONTROL_BAR_ACTIVITIES) {
+                try {
+                    bars.add(lpparam.classLoader.loadClass(name));
+                } catch (ClassNotFoundException ignored) { }
+            }
             Class<?> handle = null;
             try {
                 handle = lpparam.classLoader.loadClass(
@@ -129,7 +162,7 @@ public final class ControlBarHook implements RecordingCanvasHook.Gate {
                                 android.content.Context ctx = v.getContext();
                                 while (ctx instanceof android.content.ContextWrapper) {
                                     if (ctx instanceof android.app.Activity) {
-                                        if (base != null && base.isInstance(ctx)) {
+                                        if (isBarActivity(bars, ctx)) {
                                             c = (handleCls != null && handleCls.isInstance(ctx))
                                                     ? CB_MODE_HANDLE : CB_MODE_PILL;
                                             why = "activity " + ctx.getClass().getSimpleName();

@@ -72,7 +72,12 @@ public final class DockOrderHook {
                             if (pre != null) return;
                             pre = new ViewTreeObserver.OnPreDrawListener() {
                                 @Override public boolean onPreDraw() {
-                                    if (view instanceof ViewGroup) applyBar((ViewGroup) view);
+                                    if (view instanceof ViewGroup) {
+                                        // The status buttons too: the location indicator animation resets their shifts without a layout
+                                        View status = statusView((ViewGroup) view);
+                                        if (status instanceof ViewGroup && status.getWidth() > 0) apply((ViewGroup) status);
+                                        applyBar((ViewGroup) view);
+                                    }
                                     return true;
                                 }
                             };
@@ -202,6 +207,14 @@ public final class DockOrderHook {
         } catch (Throwable t) {
             if (sLogs++ < 8) Log.w(TAG, "ORDER: apply failed: " + t);
         }
+    }
+
+    private static View statusView(ViewGroup bar) {
+        for (int i = 0; i < bar.getChildCount(); i++) {
+            View c = bar.getChildAt(i);
+            if (c.getClass().getName().equals(FirmwareNames.SYSTEM_STATUS_VIEW)) return c;
+        }
+        return null;
     }
 
     /** Bar level: swaps the apps and status sides. Uses layout positions only, so it is safe to run every frame. */

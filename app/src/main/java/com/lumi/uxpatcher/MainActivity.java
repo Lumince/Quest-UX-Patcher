@@ -14,12 +14,12 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -62,7 +62,12 @@ public class MainActivity extends Activity {
 
     private static final int WIDE_DP = 700;
     private SharedPreferences prefs;
+    private static final String KEY_VALUE_ENTRY = "ui_value_entry";
+    private final java.util.List<ColorCard> colorCards = new java.util.ArrayList<>();
     private Button killBtn;
+    private FrameLayout snackHost;
+    private View snackView;
+    private final Runnable snackHide = this::hideSnack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,27 +129,35 @@ public class MainActivity extends Activity {
         killLp.setMargins(dp(20), dp(8), dp(20), dp(16));
         root.addView(killBtn, killLp);
 
-        setContentView(root);
+        snackHost = new FrameLayout(this);
+        snackHost.addView(root, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        setContentView(snackHost);
         requestRoot();
     }
 
     // ── Cards ─────────────────────────────────────────────────────────────────────────────
 
+    private Switch pctSwitch, iconSwitch;
+
     private void buildDockCard(LinearLayout left, LinearLayout right) {
         LinearLayout card = card(left);
         sectionLabel(card, "DOCK");
 
-        prefSwitch(card, "Hide profile icon", Prefs.KEY_HIDE_PROFILE, false);
         prefSwitch(card, "Raise pin limit to " + Config.DOCK_PIN_LIMIT, Prefs.KEY_PIN_LIMIT, true);
+        prefSwitch(card, "Hide profile icon", Prefs.KEY_HIDE_PROFILE, false);
         prefSwitch(card, "Hide passthrough button", Prefs.KEY_HIDE_PT, false);
-        prefSwitch(card, "Hide battery icon", Prefs.KEY_HIDE_BATT_ICON, false);
+        pctSwitch = prefSwitch(card, "Show battery percentage", Prefs.KEY_BATT_PERCENT, true,
+                (b, on) -> { if (!on && iconSwitch != null && iconSwitch.isChecked()) iconSwitch.setChecked(false); });
+        iconSwitch = prefSwitch(card, "Hide battery icon", Prefs.KEY_HIDE_BATT_ICON, false,
+                (b, on) -> { if (on && pctSwitch != null && !pctSwitch.isChecked()) pctSwitch.setChecked(true); });
+        if (iconSwitch.isChecked() && !pctSwitch.isChecked()) pctSwitch.setChecked(true);
 
         LinearLayout order = card(right);
         sectionLabel(order, "DOCK BUTTON ORDER");
         prefSwitch(order, "Library button on the left", Prefs.KEY_LIB_FIRST, false);
         prefSwitch(order, "Apps section on the left", Prefs.KEY_APPS_LEFT, false);
         buildOrderList(order);
-
 
         LinearLayout lib = card(left);
         sectionLabel(lib, "LIBRARY");
@@ -218,7 +231,7 @@ public class MainActivity extends Activity {
         for (String t : dockOrder) { if (sb.length() > 0) sb.append(','); sb.append(t); }
         prefs.edit().putString(Prefs.KEY_DOCK_ORDER, sb.toString()).apply();
         pushToGlobal();
-        toastSaved();
+        snackSaved();
     }
 
     private void refreshOrderRows() {
@@ -272,7 +285,13 @@ public class MainActivity extends Activity {
     }
 
     /** A saved on/off switch, showing {@code def} until the user touches it */
-    private void prefSwitch(LinearLayout card, String label, String key, boolean def) {
+    private Switch prefSwitch(LinearLayout card, String label, String key, boolean def) {
+        return prefSwitch(card, label, key, def, null);
+    }
+
+    /** `after` runs when the switch changes, before the settings are pushed */
+    private Switch prefSwitch(LinearLayout card, String label, String key, boolean def,
+                              android.widget.CompoundButton.OnCheckedChangeListener after) {
         Switch sw = new Switch(this);
         sw.setText(label);
         sw.setTextColor(COLOR_TEXT);
@@ -284,13 +303,15 @@ public class MainActivity extends Activity {
         sw.setChecked(prefs.getBoolean(key, def));
         sw.setOnCheckedChangeListener((b, checked) -> {
             prefs.edit().putBoolean(key, checked).apply();
+            if (after != null) after.onCheckedChanged(b, checked);
             pushToGlobal();
-            toastSaved();
+            snackSaved();
         });
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         lp.setMargins(0, dp(6), 0, 0);
         card.addView(sw, lp);
+        return sw;
     }
 
     // ── Colour handling ───────────────────────────────────────────────────────────────────
@@ -328,6 +349,8 @@ public class MainActivity extends Activity {
         TextView summary, chevron, status;
         LinearLayout body;
         final SeekBar[] bars = new SeekBar[3];
+        final Channel[] ch = new Channel[3];
+        TextView modeBtn;
 
         ColorCard(LinearLayout parent, String title, String key, boolean optional, int defRgb, String resetText) {
             this.key = key;
@@ -443,9 +466,30 @@ public class MainActivity extends Activity {
             headLp.bottomMargin = dp(8);
             body.addView(head, headLp);
 
-            bars[0] = slider(body, "Red", red, Color.parseColor("#EF5350"), v -> { if (!updating) { red = v; touched(); } });
-            bars[1] = slider(body, "Green", green, Color.parseColor("#66BB6A"), v -> { if (!updating) { green = v; touched(); } });
-            bars[2] = slider(body, "Blue", blue, Color.parseColor("#42A5F5"), v -> { if (!updating) { blue = v; touched(); } });
+            LinearLayout modeRow = new LinearLayout(MainActivity.this);
+            modeRow.setOrientation(LinearLayout.HORIZONTAL);
+            modeRow.setGravity(Gravity.CENTER_VERTICAL);
+            TextView modeLabel = new TextView(MainActivity.this);
+            modeLabel.setText("RGB");
+            modeLabel.setTextColor(COLOR_DIM);
+            modeLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+            modeRow.addView(modeLabel, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            modeBtn = new TextView(MainActivity.this);
+            modeBtn.setTextColor(COLOR_ACCENT);
+            modeBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            modeBtn.setTypeface(Typeface.DEFAULT_BOLD);
+            modeBtn.setPadding(dp(8), dp(4), dp(8), dp(4));
+            modeBtn.setOnClickListener(v -> {
+                prefs.edit().putBoolean(KEY_VALUE_ENTRY, !prefs.getBoolean(KEY_VALUE_ENTRY, false)).apply();
+                for (ColorCard c : colorCards) c.applyMode();
+            });
+            modeRow.addView(modeBtn);
+            body.addView(modeRow);
+
+            ch[0] = slider(body, "Red", red, Color.parseColor("#EF5350"), v -> { if (!updating) { red = v; touched(); } });
+            ch[1] = slider(body, "Green", green, Color.parseColor("#66BB6A"), v -> { if (!updating) { green = v; touched(); } });
+            ch[2] = slider(body, "Blue", blue, Color.parseColor("#42A5F5"), v -> { if (!updating) { blue = v; touched(); } });
+            for (int i = 0; i < 3; i++) bars[i] = ch[i].bar;
 
             LinearLayout buttons = new LinearLayout(MainActivity.this);
             buttons.setOrientation(LinearLayout.HORIZONTAL);
@@ -482,7 +526,20 @@ public class MainActivity extends Activity {
             bl.topMargin = dp(8);
             body.addView(buttons, bl);
 
+            applyMode();
+            colorCards.add(this);
             refresh();
+        }
+
+        /** Sliders, or number fields for typing the channel values */
+        void applyMode() {
+            boolean typed = prefs.getBoolean(KEY_VALUE_ENTRY, false);
+            for (Channel c : ch) {
+                c.bar.setVisibility(typed ? View.GONE : View.VISIBLE);
+                c.text.setVisibility(typed ? View.GONE : View.VISIBLE);
+                c.edit.setVisibility(typed ? View.VISIBLE : View.GONE);
+            }
+            modeBtn.setText(typed ? "Use sliders" : "Type values");
         }
 
         /** Moves the sliders to {@code rgb} without firing their listeners */
@@ -535,18 +592,68 @@ public class MainActivity extends Activity {
         void save() {
             prefs.edit().putInt(key, off ? Prefs.OFF : Color.rgb(red, green, blue) & 0xFFFFFF).apply();
             pushToGlobal();
-            toastSaved();
+            snackSaved();
         }
     }
 
-    private void toastSaved() {
-        Toast.makeText(this, "Saved — tap Kill Processes to apply", Toast.LENGTH_SHORT).show();
+    private void snackSaved() {
+        snack("Saved — tap Kill Processes to apply", false);
+    }
+
+    /** A short message bar above the Kill button; a new one replaces the one showing */
+    private void snack(String msg, boolean longer) {
+        if (snackHost == null) return;
+        if (snackView != null) {
+            snackView.animate().cancel();
+            snackHost.removeView(snackView);
+        }
+        snackHost.removeCallbacks(snackHide);
+
+        TextView t = new TextView(this);
+        t.setText(msg);
+        t.setTextColor(COLOR_TEXT);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        t.setMaxWidth(dp(520));
+        t.setPadding(dp(16), dp(12), dp(16), dp(12));
+        t.setBackground(rounded(Color.parseColor("#33334F"), 8));
+        t.setElevation(dp(6));
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        lp.leftMargin = dp(16);
+        lp.rightMargin = dp(16);
+        lp.bottomMargin = (killBtn != null && killBtn.getHeight() > 0 ? killBtn.getHeight() + dp(24) : dp(80)) + dp(8);
+        snackHost.addView(t, lp);
+        t.setAlpha(0f);
+        t.setTranslationY(dp(16));
+        t.animate().alpha(1f).translationY(0f).setDuration(180).start();
+        snackView = t;
+        snackHost.postDelayed(snackHide, longer ? 4000 : 2500);
+    }
+
+    private void hideSnack() {
+        final View v = snackView;
+        if (v == null || snackHost == null) return;
+        snackView = null;
+        v.animate().alpha(0f).translationY(dp(16)).setDuration(150)
+                .withEndAction(() -> snackHost.removeView(v)).start();
     }
 
     private interface IntConsumer { void accept(int v); }
 
-    /** One colour channel: label, value and a 0..255 SeekBar */
-    private SeekBar slider(LinearLayout parent, String label, int start, int tint, IntConsumer onChange) {
+    /** The widgets of one colour channel */
+    private static final class Channel {
+        SeekBar bar;
+        TextView text;
+        EditText edit;
+    }
+
+    private static int parseChannel(CharSequence cs) {
+        try { return Math.min(255, Integer.parseInt(cs.toString().trim())); } catch (NumberFormatException e) { return -1; }
+    }
+
+    /** One colour channel: label, value (a number field in value mode) and a 0..255 SeekBar */
+    private Channel slider(LinearLayout parent, String label, int start, int tint, IntConsumer onChange) {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setBackground(rounded(Color.parseColor("#22FFFFFF"), 10));
@@ -554,6 +661,7 @@ public class MainActivity extends Activity {
 
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
         TextView name = new TextView(this);
         name.setText(label);
         name.setTextColor(COLOR_TEXT);
@@ -564,9 +672,42 @@ public class MainActivity extends Activity {
         value.setTextColor(COLOR_DIM);
         value.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         row.addView(value);
+
+        final SeekBar bar = new SeekBar(this);
+        final EditText edit = new EditText(this);
+        final boolean[] syncing = new boolean[1];       // set while the code itself writes the number field
+        edit.setText(String.valueOf(start));
+        edit.setTextColor(COLOR_TEXT);
+        edit.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        edit.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        edit.setGravity(Gravity.CENTER);
+        edit.setSingleLine(true);
+        edit.setSelectAllOnFocus(true);
+        edit.setBackground(rounded(Color.parseColor("#22FFFFFF"), 8));
+        edit.setPadding(dp(8), dp(4), dp(8), dp(4));
+        edit.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        edit.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
+        edit.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(3)});
+        edit.setVisibility(View.GONE);
+        edit.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence c, int a, int b, int d) { }
+            @Override public void onTextChanged(CharSequence c, int a, int b, int d) { }
+            @Override public void afterTextChanged(android.text.Editable e) {
+                if (syncing[0]) return;
+                int v = parseChannel(e);
+                if (v >= 0) bar.setProgress(v);
+            }
+        });
+        edit.setOnEditorActionListener((v, action, ev) -> { edit.clearFocus(); return false; });
+        edit.setOnFocusChangeListener((v, focus) -> {
+            if (focus) return;
+            syncing[0] = true;
+            edit.setText(String.valueOf(bar.getProgress()));
+            syncing[0] = false;
+        });
+        row.addView(edit, new LinearLayout.LayoutParams(dp(64), LinearLayout.LayoutParams.WRAP_CONTENT));
         box.addView(row);
 
-        SeekBar bar = new SeekBar(this);
         bar.setMax(255);
         bar.setProgress(start);
         ColorStateList tl = ColorStateList.valueOf(tint);
@@ -576,6 +717,12 @@ public class MainActivity extends Activity {
         bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar s, int p, boolean fromUser) {
                 value.setText(String.valueOf(p));
+                if (parseChannel(edit.getText()) != p) {
+                    syncing[0] = true;
+                    edit.setText(String.valueOf(p));
+                    edit.setSelection(edit.getText().length());
+                    syncing[0] = false;
+                }
                 onChange.accept(p);
             }
             @Override public void onStartTrackingTouch(SeekBar s) { }
@@ -588,7 +735,11 @@ public class MainActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         lp.topMargin = dp(8);
         parent.addView(box, lp);
-        return bar;
+        Channel c = new Channel();
+        c.bar = bar;
+        c.text = value;
+        c.edit = edit;
+        return c;
     }
 
     // ── Settings storage ──────────────────────────────────────────────────────────────────
@@ -629,6 +780,7 @@ public class MainActivity extends Activity {
                 "settings put global " + Prefs.G_LIB_FIRST + " " + (prefs.getBoolean(Prefs.KEY_LIB_FIRST, false) ? 1 : 0),
                 "settings put global " + Prefs.G_HIDE_PT + " " + (prefs.getBoolean(Prefs.KEY_HIDE_PT, false) ? 1 : 0),
                 "settings put global " + Prefs.G_HIDE_BATT_ICON + " " + (prefs.getBoolean(Prefs.KEY_HIDE_BATT_ICON, false) ? 1 : 0),
+                "settings put global " + Prefs.G_BATT_PERCENT + " " + (prefs.getBoolean(Prefs.KEY_BATT_PERCENT, true) ? 1 : 0),
                 "settings put global " + Prefs.G_BG + " " + bg,
                 "settings put global " + Prefs.G_ACCENT + " " + accent,
                 "settings put global " + Prefs.G_TEXT + " " + text,
@@ -668,9 +820,8 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 killBtn.setEnabled(true);
                 killBtn.setText("Kill Processes");
-                Toast.makeText(this, bad == 0 ? "Done"
-                        : ok + " stopped, " + bad + " failed — is root granted?",
-                        Toast.LENGTH_LONG).show();
+                snack(bad == 0 ? "Done"
+                        : ok + " stopped, " + bad + " failed — is root granted?", bad != 0);
             });
         }, "UXPatcher-kill").start();
     }

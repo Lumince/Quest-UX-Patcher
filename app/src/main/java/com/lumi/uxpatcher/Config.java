@@ -109,6 +109,7 @@ public final class Config {
     public static final Set<String> DUMP_PACKAGES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             SYSTEMUX_PACKAGE,
             "com.oculus.panelapp.settings",
+            "com.oculus.panelapp.library",
             "com.oculus.systemutilities",
             SOCIAL_PACKAGE)));
 

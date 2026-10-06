@@ -107,6 +107,7 @@ public final class BatteryPercentHook {
     private static void setup(final ViewGroup root) {
         try {
             final Context ctx = root.getContext();
+            if (!Prefs.batteryPercent()) { Log.i(TAG, "BATTERY: percentage off, nothing changed"); return; }
             View bat = findBattery(root);
             if (bat == null || bat.getLayoutParams() == null) { Log.w(TAG, "BATTERY: battery container not found"); return; }
             int idBat = bat.getId();
@@ -159,7 +160,11 @@ public final class BatteryPercentHook {
             }
             float density = root.getResources().getDisplayMetrics().density;
             int gap = Math.round(3 * density);
-            int textW = (int) Math.ceil(pct.getPaint().measureText("100%"));
+            // A little padding so the glyph edges aren't clipped at the view bounds; it counts as part of the text width
+            int padPx = Math.round(2 * density);
+            pct.setPadding(padPx, 0, padPx, 0);
+            int textW = (int) Math.ceil(pct.getPaint().measureText("100%")) + 2 * padPx;
+            pct.setMinWidth(textW);
 
             ViewGroup.LayoutParams blp = bat.getLayoutParams();
             Constructor<?> ctor = blp.getClass().getConstructor(int.class, int.class);
@@ -209,6 +214,7 @@ public final class BatteryPercentHook {
             final int[] extraGrow = {0};          // pill width change as the digits change
             final int[] leftGrow = {0};           // extra room added left of the clock
             final boolean[] leftDone = {false};
+            final boolean[] warned = {false};
             final int rightPad = oldEndMargin + endPad;   // pill end to the percentage text
             final Runnable apply = new Runnable() { @Override public void run() {
                 int delta = timeV == null ? 0 : Math.max(0, timeV.getWidth() - baseTimeW);
@@ -221,10 +227,11 @@ public final class BatteryPercentHook {
             }};
             apply.run();
             pct.setTag(new Runnable() { @Override public void run() {
-                int w = (int) Math.ceil(pct.getPaint().measureText(pct.getText().toString()));
+                int w = (int) Math.ceil(pct.getPaint().measureText(pct.getText().toString())) + pct.getPaddingLeft() + pct.getPaddingRight();
                 int d = w - reserved[0];
                 if (d == 0) return;
                 reserved[0] = w;
+                pct.setMinWidth(w);
                 ViewGroup.MarginLayoutParams m = (ViewGroup.MarginLayoutParams) batV.getLayoutParams();
                 m.setMarginEnd(m.getMarginEnd() + d);
                 batV.setLayoutParams(m);
@@ -235,6 +242,12 @@ public final class BatteryPercentHook {
                 @Override public void onLayoutChange(View view, int l, int t, int r, int b, int ol, int ot, int or, int ob) {
                     apply.run();
                     if (iconCut > 0 && batV.getVisibility() != View.INVISIBLE) batV.setVisibility(View.INVISIBLE);
+                    int need = (int) Math.ceil(pct.getPaint().measureText(pct.getText().toString())) + pct.getPaddingLeft() + pct.getPaddingRight();
+                    if (!warned[0] && pct.getWidth() > 0 && pct.getWidth() < need) {
+                        warned[0] = true;
+                        Log.w(TAG, "BATTERY: percentage view is " + pct.getWidth() + "px, its text needs " + need + "px ('" + pct.getText()
+                                + "'); pill " + (pillV == null ? -1 : pillV.getWidth()) + "px, status view " + view.getWidth() + "px");
+                    }
                     if (!leftDone[0] && timeV != null && pillV != null && pillV.getWidth() > 0
                             && pillV.getLayoutParams().width == pillV.getWidth() && timeV.getLeft() > pillV.getLeft()) {
                         leftDone[0] = true;

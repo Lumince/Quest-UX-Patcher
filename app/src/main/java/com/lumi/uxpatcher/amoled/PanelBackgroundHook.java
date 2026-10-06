@@ -24,6 +24,8 @@ public final class PanelBackgroundHook {
     private static final java.util.concurrent.ConcurrentHashMap<Class<?>, java.lang.reflect.Field[]>
             PANEL_PATH_FIELDS = new java.util.concurrent.ConcurrentHashMap<>();
     private static boolean panelLogged = false;
+    private static final java.util.Set<String> PANEL_SEEN =
+            java.util.Collections.synchronizedSet(new java.util.HashSet<String>());
 
     static {
         PANEL_BLACK.setColor(Color.BLACK);   // real colour is applied per draw (Prefs.bg())
@@ -52,6 +54,7 @@ public final class PanelBackgroundHook {
                                         (android.graphics.Canvas) param.args[0];
                                 PANEL_BLACK.setColor(Prefs.bg());
                                 android.graphics.Path p = findFillPath(param.thisObject);
+                                probe(param.thisObject, p != null);
                                 if (p != null) {
                                     canvas.drawPath(p, PANEL_BLACK);
                                     param.setResult(null);
@@ -86,6 +89,14 @@ public final class PanelBackgroundHook {
                 return;
             }
         }
+    }
+
+    /** Logs each kind of panel drawable once (class, path or bounds fill, size), to see which ones are drawn */
+    private static void probe(Object d, boolean path) {
+        if (PANEL_SEEN.size() >= 24) return;
+        android.graphics.Rect b = ((android.graphics.drawable.Drawable) d).getBounds();
+        String key = d.getClass().getName() + (path ? " path " : " bounds ") + b.width() + "x" + b.height();
+        if (PANEL_SEEN.add(key)) Log.i(TAG, "PANEL: draw " + key + " bg=#" + Integer.toHexString(Prefs.bg()));
     }
 
     /** The largest Path in the drawable's state object (found by type, names are obfuscated), or null */

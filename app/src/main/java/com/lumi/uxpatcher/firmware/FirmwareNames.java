@@ -36,10 +36,16 @@ public final class FirmwareNames {
             "com.oculus.panelapp.anytimeui.bar.status.SystemStatusView";
 
     // ── VrShell window bars ───────────────────────────────────────────────────────────────
-    public static final String CONTROL_BAR_BASE_ACTIVITY =
-            "com.oculus.panelapp.controlbar.BaseControlBarActivity";
+    /** Activities that host a window bar: the shared base (newer builds), or the bar activities themselves (v78-v81) */
+    public static final String[] CONTROL_BAR_ACTIVITIES = {
+            "com.oculus.panelapp.controlbar.BaseControlBarActivity",
+            "com.oculus.panelapp.controlbar.UnifiedControlBarActivity",
+            "com.oculus.panelapp.controlbar.ControlBarActivity"};
     public static final String CONTROL_BAR_HANDLE_ACTIVITY =
             "com.oculus.panelapp.controlbar.HandleBarControlBarActivity";
+    /** The bar's own layout on builds that draw it with plain views (v78); absent where the bar is Compose */
+    public static final String CONTROL_BAR_VIEW =
+            "com.oculus.panelapp.controlbar.ui.controlbarmenu.ControlBarView";
     public static final String COMPOSE_ANDROID_VIEW =
             "androidx.compose.ui.platform.AndroidComposeView";
 

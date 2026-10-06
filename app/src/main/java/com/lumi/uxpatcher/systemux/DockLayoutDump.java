@@ -3,10 +3,13 @@ package com.lumi.uxpatcher.systemux;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 
 import com.lumi.uxpatcher.Config;
 import com.lumi.uxpatcher.firmware.FirmwareNames;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.WeakHashMap;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -34,6 +37,7 @@ public final class DockLayoutDump {
                             final ViewGroup g = (ViewGroup) view;
                             g.postDelayed(new Runnable() { @Override public void run() { dump(g, "early"); } }, 4000);
                             g.postDelayed(new Runnable() { @Override public void run() { dump(g, "late"); } }, 14000);
+                            watch(g);
                         }
                     });
                 }
@@ -42,6 +46,92 @@ public final class DockLayoutDump {
         } catch (Throwable t) {
             Log.w(LTAG, "install failed: " + t);
         }
+    }
+
+    /** Logs views that show up in or leave the dock after the dumps, for icons that come and go */
+    private static void watch(final ViewGroup bar) {
+        final Map<String, String> prev = new HashMap<String, String>();
+        final boolean[] first = {true};
+        final boolean[] pending = {false};
+        final long[] until = {0};
+        final String[] lastGeo = {""};
+        final Runnable check = new Runnable() {
+            @Override public void run() {
+                pending[0] = false;
+                try {
+                    Map<String, String> cur = new HashMap<String, String>();
+                    int[] o = new int[2];
+                    bar.getLocationInWindow(o);
+                    collect(bar, cur, o[0], o[1], 5);
+                    if (!first[0]) {
+                        for (Map.Entry<String, String> e : cur.entrySet()) {
+                            if (!prev.containsKey(e.getKey())) Log.i(LTAG, "+ shown " + e.getValue());
+                        }
+                        for (Map.Entry<String, String> e : prev.entrySet()) {
+                            if (!cur.containsKey(e.getKey())) Log.i(LTAG, "- gone  " + e.getValue());
+                        }
+                    }
+                    // While the privacy indicator runs, log where the status children sit
+                    long now = android.os.SystemClock.uptimeMillis();
+                    for (String k : cur.keySet()) if (k.contains("#privacy_indicator")) until[0] = now + 15000;
+                    if (now < until[0]) {
+                        String g = geo(bar);
+                        if (!g.equals(lastGeo[0])) { lastGeo[0] = g; Log.i(LTAG, "geo " + g); }
+                    }
+                    first[0] = false;
+                    prev.clear();
+                    prev.putAll(cur);
+                } catch (Throwable t) {
+                    Log.w(LTAG, "watch failed: " + t);
+                }
+            }
+        };
+        bar.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override public void onGlobalLayout() {
+                if (pending[0]) return;
+                pending[0] = true;
+                bar.postDelayed(check, 300);   // layouts come in bursts, look once per burst
+            }
+        });
+        Log.i(LTAG, "watching the dock for views that appear or leave");
+    }
+
+    /** One line with the status view's children: id, V/I/G visibility, left-right, layout width */
+    private static String geo(ViewGroup bar) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < bar.getChildCount(); i++) {
+            View s = bar.getChildAt(i);
+            if (!(s instanceof ViewGroup) || !s.getClass().getName().equals(FirmwareNames.SYSTEM_STATUS_VIEW)) continue;
+            ViewGroup g = (ViewGroup) s;
+            sb.append("status ").append(g.getLeft()).append('-').append(g.getRight()).append(" |");
+            for (int k = 0; k < g.getChildCount(); k++) {
+                View c = g.getChildAt(k);
+                int vis = c.getVisibility();
+                sb.append(' ').append(idName(c)).append(vis == View.VISIBLE ? " V " : vis == View.INVISIBLE ? " I " : " G ")
+                        .append(c.getLeft()).append('-').append(c.getRight());
+                if (c.getTranslationX() != 0) sb.append(" tx").append(Math.round(c.getTranslationX()));
+                ViewGroup.LayoutParams lp = c.getLayoutParams();
+                if (lp != null) sb.append(" w").append(lp.width);
+                sb.append(';');
+            }
+        }
+        return sb.toString();
+    }
+
+    /** Collects the visible views under v as key -> description. Skips the app tiles. */
+    private static void collect(View v, Map<String, String> out, int ox, int oy, int levels) {
+        if (v.getVisibility() != View.VISIBLE) return;
+        int[] loc = new int[2];
+        v.getLocationInWindow(loc);
+        String id = idName(v);
+        String key = v.getClass().getSimpleName() + (id != null ? " #" + id : "");
+        CharSequence cd = v.getContentDescription();
+        if (cd != null) key += " cd='" + cd + "'";
+        out.put(key, key + " [" + (loc[0] - ox) + "," + (loc[1] - oy) + " " + v.getWidth() + "x" + v.getHeight() + "]");
+        if (!(v instanceof ViewGroup) || levels <= 0) return;
+        if (v.getClass().getName().equals(FirmwareNames.DYNAMIC_APPS_VIEW)) return;
+        ViewGroup g = (ViewGroup) v;
+        for (int i = 0; i < g.getChildCount(); i++) collect(g.getChildAt(i), out, ox, oy, levels - 1);
     }
 
     private static void dump(ViewGroup bar, String when) {

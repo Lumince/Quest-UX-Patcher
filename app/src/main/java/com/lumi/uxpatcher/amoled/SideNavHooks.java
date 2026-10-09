@@ -45,6 +45,7 @@ public final class SideNavHooks {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
                         View nav = (View) param.thisObject;
+                        if (!Prefs.bgEnabled()) return;
                         nav.setBackgroundColor(Prefs.bg());
                         nav.setVerticalFadingEdgeEnabled(false);
                         // the inflated container has a translucent white background drawn above ours
@@ -122,7 +123,7 @@ public final class SideNavHooks {
                                 synchronized (SIDENAV_LISTS) {
                                     SIDENAV_LISTS.put(v, inNav);
                                 }
-                                if (inNav) {
+                                if (inNav && Prefs.bgEnabled()) {
                                     v.setBackgroundColor(Prefs.bg()); // once
                                     Log.i(TAG, "SIDENAV: list fade disabled");
                                 }

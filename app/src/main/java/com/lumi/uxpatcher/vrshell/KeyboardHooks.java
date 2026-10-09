@@ -405,9 +405,10 @@ public final class KeyboardHooks {
     private static int mapFill(int color, String call, Object[] args) {
         int a = color >>> 24;
         if (a == 0) return color;
+        final boolean bgOn = Prefs.bgEnabled();
         int bg = Prefs.bg();
-        if ((color & 0xFFFFFF) == (bg & 0xFFFFFF)) return color;
-        if ((color & 0xFFFFFF) == (keyLight(bg) & 0xFFFFFF)) return color;      // already a mapped key colour
+        if (bgOn && (color & 0xFFFFFF) == (bg & 0xFFFFFF)) return color;
+        if (bgOn && (color & 0xFFFFFF) == (keyLight(bg) & 0xFFFFFF)) return color;      // already a mapped key colour
 
         int out = color;
         int icon = iconRgb();
@@ -423,9 +424,9 @@ public final class KeyboardHooks {
                 && (wh == null || Math.min(wh[0], wh[1]) <= KEY_SHAPE_MAX_SIDE)) {
             float v = mx / 255f;                                                    // white shape (enter key, mic circle)
             out = ThemeHooks.blend(bg, icon, v, a);
-        } else if (a >= 0x10 && a < 0xA0 && s <= 0.25f && mx >= 160 && !inKeyBitmap() && big) {
+        } else if (bgOn && a >= 0x10 && a < 0xA0 && s <= 0.25f && mx >= 160 && !inKeyBitmap() && big) {
             out = 0xFF000000 | (bg & 0x00FFFFFF);                                  // translucent white bar -> background
-        } else if (mx < DARK_MAX && s <= 0.25f && a >= 0x60) {                   // dark grey: panel, bar or key
+        } else if (bgOn && mx < DARK_MAX && s <= 0.25f && a >= 0x60) {                   // dark grey: panel, bar or key
             int rgb = (mx <= PANEL_MAX || (big && !inKeyBitmap())) ? bg : keyLight(bg);
             out = (a << 24) | (rgb & 0x00FFFFFF);
         }

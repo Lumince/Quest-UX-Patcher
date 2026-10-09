@@ -74,7 +74,7 @@ public final class RecordingCanvasHook {
                     probeDraw(param, paint, color, mode);
                     if (paint.getShader() != null) {
                         // colour is irrelevant while a shader is set; only a gate may flatten it
-                        if (gate != null && gate.flattenShader(mode, drawSize(param.args))) {
+                        if (Prefs.bgEnabled() && gate != null && gate.flattenShader(mode, drawSize(param.args))) {
                             param.setObjectExtra("savedShader", paint.getShader());
                             param.setObjectExtra("savedColor", color);
                             paint.setShader(null);
@@ -90,7 +90,7 @@ public final class RecordingCanvasHook {
                     int mapped = gate != null
                             ? gate.map(mode, color, drawSize(param.args))
                             : remap(color);
-                    if (mapped == color && tileMode != Colors.TILES_OFF && gate == null) {
+                    if (mapped == color && tileMode != Colors.TILES_OFF && gate == null && Prefs.bgEnabled()) {
                         float[] wh = drawSize(param.args);
                         if (isTileFill(tileMode, param.method.getName(), color, wh)) {
                             mapped = Prefs.bg();
@@ -101,7 +101,7 @@ public final class RecordingCanvasHook {
                         }
                     }
                     if (mapped == color && tileMode != Colors.TILES_OFF && gate == null
-                            && Config.TILE_HOVER_BG) {
+                            && Config.TILE_HOVER_BG && Prefs.bgEnabled()) {
                         float[] wh = drawSize(param.args);
                         if (Colors.isTileHover(tileMode, param.method.getName(), color, wh)) {
                             mapped = (color & 0xFF000000) | (Prefs.bg() & 0x00FFFFFF);

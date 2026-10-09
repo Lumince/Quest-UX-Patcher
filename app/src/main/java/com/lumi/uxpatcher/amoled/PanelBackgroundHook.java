@@ -49,6 +49,7 @@ public final class PanelBackgroundHook {
                         new XC_MethodHook() {
                             @Override
                             protected void beforeHookedMethod(MethodHookParam param) {
+                                if (!Prefs.bgEnabled()) return;   // background theming switched off: Meta's own fill
                                 if (gate != null && !gate.active((android.graphics.drawable.Drawable) param.thisObject)) return;
                                 android.graphics.Canvas canvas =
                                         (android.graphics.Canvas) param.args[0];

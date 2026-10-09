@@ -31,6 +31,7 @@ public final class MultiLayerContainerHook {
                 XposedBridge.hookMethod(ctor, new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
+                        if (!Prefs.bgEnabled()) return;
                         View v = (View) param.thisObject;
                         v.setBackgroundColor(Prefs.bg());
                         Log.i(TAG, "MULTILAYER: OCMultiLayerContainer constructed, forced black");
@@ -44,7 +45,7 @@ public final class MultiLayerContainerHook {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) {
                             View content = (View) param.args[0];
-                            if (content != null && containerCls.isInstance(content)) {
+                            if (content != null && Prefs.bgEnabled() && containerCls.isInstance(content)) {
                                 content.setBackgroundColor(Prefs.bg());
                                 Log.i(TAG, "MULTILAYER: setContentView → forced black on "
                                         + content.getClass().getSimpleName());

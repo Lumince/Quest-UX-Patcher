@@ -110,6 +110,11 @@ public class MainActivity extends Activity {
             content.addView(columns, new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         }
+        LinearLayout bgToggleCard = card(left);
+        bgToggleCard.setPadding(dp(16), dp(6), dp(16), dp(6));      // one slim row, no section label
+        Switch bgSwitch = prefSwitch(bgToggleCard, "Background theming", Prefs.KEY_BG_ENABLED, true);
+        ((LinearLayout.LayoutParams) bgSwitch.getLayoutParams()).topMargin = 0;
+        bgSwitch.setMinHeight(dp(40));
         new ColorCard(left, "BACKGROUND COLOR", Prefs.KEY_BG, false, 0x000000, "Reset");
         new ColorCard(left, "ACCENT COLOR (icons, sliders)", Prefs.KEY_ACCENT, true, 0xFFFFFF, "Default");
         new ColorCard(left, "TEXT COLOR", Prefs.KEY_TEXT, true, 0xFFFFFF, "Default");
@@ -159,7 +164,7 @@ public class MainActivity extends Activity {
         prefSwitch(order, "Apps section on the left", Prefs.KEY_APPS_LEFT, false);
         buildOrderList(order);
 
-        LinearLayout lib = card(left);
+        LinearLayout lib = card(right);
         sectionLabel(lib, "LIBRARY");
         prefSwitch(lib, "Force Unknown Sources tab visible", Prefs.KEY_UNKNOWN_TAB, true);
     }
@@ -781,6 +786,7 @@ public class MainActivity extends Activity {
                 "settings put global " + Prefs.G_HIDE_PT + " " + (prefs.getBoolean(Prefs.KEY_HIDE_PT, false) ? 1 : 0),
                 "settings put global " + Prefs.G_HIDE_BATT_ICON + " " + (prefs.getBoolean(Prefs.KEY_HIDE_BATT_ICON, false) ? 1 : 0),
                 "settings put global " + Prefs.G_BATT_PERCENT + " " + (prefs.getBoolean(Prefs.KEY_BATT_PERCENT, true) ? 1 : 0),
+                "settings put global " + Prefs.G_BG_ENABLED + " " + (prefs.getBoolean(Prefs.KEY_BG_ENABLED, true) ? 1 : 0),
                 "settings put global " + Prefs.G_BG + " " + bg,
                 "settings put global " + Prefs.G_ACCENT + " " + accent,
                 "settings put global " + Prefs.G_TEXT + " " + text,

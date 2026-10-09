@@ -38,6 +38,7 @@ public final class Prefs {
     public static final String KEY_HIDE_PT = "hide_passthrough";
     public static final String KEY_HIDE_BATT_ICON = "hide_battery_icon";
     public static final String KEY_BATT_PERCENT = "battery_percent";
+    public static final String KEY_BG_ENABLED = "bg_enabled";
 
     /** Stored in place of an RGB value when the colour is not customised. */
     public static final int OFF = -1;
@@ -54,6 +55,7 @@ public final class Prefs {
     public static final String G_HIDE_PT = "uxpatcher_hide_passthrough";
     public static final String G_HIDE_BATT_ICON = "uxpatcher_hide_battery_icon";
     public static final String G_BATT_PERCENT = "uxpatcher_battery_percent";
+    public static final String G_BG_ENABLED = "uxpatcher_bg_enabled";
     public static final String DEFAULT_DOCK_ORDER = "profile,qs,notif,pt";
 
     public static final int DEFAULT_BG = 0xFF000000;
@@ -70,6 +72,7 @@ public final class Prefs {
     private static volatile boolean hidePt = false;
     private static volatile boolean hideBattIcon = false;
     private static volatile boolean battPercent = true;
+    private static volatile boolean bgEnabled = true;
     private static volatile boolean loaded = false;
     private static boolean xspTried = false;
     private static boolean xspHadValues = false;
@@ -148,6 +151,12 @@ public final class Prefs {
         return battPercent || hideBattIcon;
     }
 
+    /** Whether background-colour theming is enabled. When false, Meta's own backgrounds show through. */
+    public static boolean bgEnabled() {
+        ensureLoaded();
+        return bgEnabled;
+    }
+
     /** True once the real settings (not just defaults) are read */
     public static boolean isLoaded() {
         ensureLoaded();
@@ -171,12 +180,12 @@ public final class Prefs {
                 Integer c = null; Boolean h = null; Integer ac = null, tx = null;
                 Boolean pl = null, ut = null;
                 String dord = null;
-                Boolean al = null, lf = null, hp = null, hb = null, bp = null;
+                Boolean al = null, lf = null, hp = null, hb = null, bp = null, bge = null;
                 Object[] r = Xsp.read();
                 if (r != null) {
                     c = (Integer) r[0]; h = (Boolean) r[1]; ac = (Integer) r[2]; tx = (Integer) r[3];
                     pl = (Boolean) r[4]; ut = (Boolean) r[5]; dord = (String) r[6]; al = (Boolean) r[7]; lf = (Boolean) r[8];
-                    hp = (Boolean) r[9]; hb = (Boolean) r[10]; bp = (Boolean) r[11];
+                    hp = (Boolean) r[9]; hb = (Boolean) r[10]; bp = (Boolean) r[11]; bge = (Boolean) r[12];
                 }
                 if (c != null) bg = 0xFF000000 | c;
                 if (h != null) hide = h;
@@ -190,7 +199,8 @@ public final class Prefs {
                 if (hp != null) hidePt = hp;
                 if (hb != null) hideBattIcon = hb;
                 if (bp != null) battPercent = bp;
-                if (c != null || h != null || ac != null || tx != null || pl != null || ut != null || dord != null || al != null || lf != null || hp != null || hb != null || bp != null) {
+                if (bge != null) bgEnabled = bge;
+                if (c != null || h != null || ac != null || tx != null || pl != null || ut != null || dord != null || al != null || lf != null || hp != null || hb != null || bp != null || bge != null) {
                     xspHadValues = true;
                     source = "XSharedPreferences";
                 }
@@ -216,6 +226,7 @@ public final class Prefs {
             String shp = android.provider.Settings.Global.getString(cr, G_HIDE_PT);
             String shb = android.provider.Settings.Global.getString(cr, G_HIDE_BATT_ICON);
             String sbp = android.provider.Settings.Global.getString(cr, G_BATT_PERCENT);
+            String sbge = android.provider.Settings.Global.getString(cr, G_BG_ENABLED);
             if (sb != null) { try { bg = 0xFF000000 | Integer.parseInt(sb.trim()); } catch (NumberFormatException ignored) { } }
             if (sh != null) hide = "1".equals(sh.trim()) || "true".equalsIgnoreCase(sh.trim());
             // non-number = off
@@ -228,8 +239,9 @@ public final class Prefs {
             if (shp != null) hidePt = "1".equals(shp.trim()) || "true".equalsIgnoreCase(shp.trim());
             if (shb != null) hideBattIcon = "1".equals(shb.trim()) || "true".equalsIgnoreCase(shb.trim());
             if (sbp != null) battPercent = !("0".equals(sbp.trim()) || "false".equalsIgnoreCase(sbp.trim()));
+            if (sbge != null) bgEnabled = !("0".equals(sbge.trim()) || "false".equalsIgnoreCase(sbge.trim()));
             if (sd != null && !sd.trim().isEmpty() && !"null".equals(sd.trim())) dockOrder = sd.trim();
-            if (sb != null || sh != null || sa != null || st != null || sp != null || su != null || sd != null || sal != null || slf != null || shp != null || shb != null || sbp != null) {
+            if (sb != null || sh != null || sa != null || st != null || sp != null || su != null || sd != null || sal != null || slf != null || shp != null || shb != null || sbp != null || sbge != null) {
                 source = xspHadValues ? "Settings.Global (overrides XSharedPreferences)" : "Settings.Global";
             }
             loaded = true;
@@ -259,7 +271,8 @@ public final class Prefs {
             Boolean hp = x.contains(KEY_HIDE_PT) ? Boolean.valueOf(x.getBoolean(KEY_HIDE_PT, false)) : null;
             Boolean hb = x.contains(KEY_HIDE_BATT_ICON) ? Boolean.valueOf(x.getBoolean(KEY_HIDE_BATT_ICON, false)) : null;
             Boolean bp = x.contains(KEY_BATT_PERCENT) ? Boolean.valueOf(x.getBoolean(KEY_BATT_PERCENT, true)) : null;
-            return new Object[]{c, h, ac, tx, pl, ut, dord, al, lf, hp, hb, bp};
+            Boolean bge = x.contains(KEY_BG_ENABLED) ? Boolean.valueOf(x.getBoolean(KEY_BG_ENABLED, true)) : null;
+            return new Object[]{c, h, ac, tx, pl, ut, dord, al, lf, hp, hb, bp, bge};
         }
     }
 

@@ -161,6 +161,7 @@ final class GradientAmoled {
 
     /** Dark (all channels < threshold) and not already the background -> background colour, same alpha */
     private static int remap(int argb, int threshold) {
+        if (!com.lumi.uxpatcher.Prefs.bgEnabled()) return argb;
         int bgRgb = com.lumi.uxpatcher.Prefs.bg() & 0x00FFFFFF;
         if ((argb & 0x00FFFFFF) != bgRgb
                 && Color.red(argb) < threshold

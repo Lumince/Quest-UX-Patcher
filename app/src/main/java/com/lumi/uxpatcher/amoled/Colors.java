@@ -14,6 +14,7 @@ public final class Colors {
 
     /** The colour rule: opaque dark -> background colour, translucent dark (alpha >= 0x60) -> same alpha in that colour. Others unchanged. */
     public static int remap(int color) {
+        if (!Prefs.bgEnabled()) return color;
         int bg = Prefs.bg();
         if (isDarkNonBackground(color)) return bg;
         if (Config.DARKEN_TRANSLUCENT
@@ -69,6 +70,7 @@ public final class Colors {
 
     /** Opaque, dark and not already the background. Translucent scrims are excluded so they stay see-through. */
     public static boolean isDarkNonBackground(int color) {
+        if (!Prefs.bgEnabled()) return false;
         return Color.alpha(color) == 255
                 && color != Prefs.bg()          // black by default, the user's colour otherwise
                 && Color.red(color)   < Config.AMOLED_THRESHOLD
@@ -92,6 +94,7 @@ public final class Colors {
 
     /** A background-coloured version of a drawable. GradientDrawable is kept (corners, strokes); others become a ColorDrawable. */
     public static Drawable toBackground(Drawable d) {
+        if (!Prefs.bgEnabled()) return d;
         final int bg = Prefs.bg();
         if (d instanceof GradientDrawable) {
             try {

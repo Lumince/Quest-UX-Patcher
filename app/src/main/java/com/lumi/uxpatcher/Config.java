@@ -53,6 +53,9 @@ public final class Config {
     /** Navigator Library: same for the left-hand tiles (All, Unknown Sources, Downloads, Search, Sort) */
     public static final boolean LIBRARY_TILES_BG = true;
 
+    /** Notifications panel (inside SystemUX): the grey row cards take the background colour */
+    public static final boolean NOTIFICATION_ROWS_BG = true;
+
     /** Tiles above: the white/light grey hover highlight takes the background colour (same alpha) */
     public static final boolean TILE_HOVER_BG = true;
 

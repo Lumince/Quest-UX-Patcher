@@ -152,6 +152,7 @@ public class MainActivity extends Activity {
         prefSwitch(card, "Raise pin limit to " + Config.DOCK_PIN_LIMIT, Prefs.KEY_PIN_LIMIT, true);
         prefSwitch(card, "Hide profile icon", Prefs.KEY_HIDE_PROFILE, false);
         prefSwitch(card, "Hide passthrough button", Prefs.KEY_HIDE_PT, false);
+        prefSwitch(card, "Hide notification badge", Prefs.KEY_HIDE_NOTIF_BADGE, false);
         pctSwitch = prefSwitch(card, "Show battery percentage", Prefs.KEY_BATT_PERCENT, true,
                 (b, on) -> { if (!on && iconSwitch != null && iconSwitch.isChecked()) iconSwitch.setChecked(false); });
         iconSwitch = prefSwitch(card, "Hide battery icon", Prefs.KEY_HIDE_BATT_ICON, false,
@@ -787,6 +788,7 @@ public class MainActivity extends Activity {
                 "settings put global " + Prefs.G_HIDE_BATT_ICON + " " + (prefs.getBoolean(Prefs.KEY_HIDE_BATT_ICON, false) ? 1 : 0),
                 "settings put global " + Prefs.G_BATT_PERCENT + " " + (prefs.getBoolean(Prefs.KEY_BATT_PERCENT, true) ? 1 : 0),
                 "settings put global " + Prefs.G_BG_ENABLED + " " + (prefs.getBoolean(Prefs.KEY_BG_ENABLED, true) ? 1 : 0),
+                "settings put global " + Prefs.G_HIDE_NOTIF_BADGE + " " + (prefs.getBoolean(Prefs.KEY_HIDE_NOTIF_BADGE, false) ? 1 : 0),
                 "settings put global " + Prefs.G_BG + " " + bg,
                 "settings put global " + Prefs.G_ACCENT + " " + accent,
                 "settings put global " + Prefs.G_TEXT + " " + text,

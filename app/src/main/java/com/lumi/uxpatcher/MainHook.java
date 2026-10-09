@@ -17,6 +17,8 @@ import com.lumi.uxpatcher.systemux.DockStatus;
 import com.lumi.uxpatcher.systemux.DockPinLimitHook;
 import com.lumi.uxpatcher.systemux.DockScrollHook;
 import com.lumi.uxpatcher.systemux.DockWidenHook;
+import com.lumi.uxpatcher.systemux.NotificationBadgeHook;
+import com.lumi.uxpatcher.systemux.NotificationRowsHook;
 import com.lumi.uxpatcher.systemux.PinningServiceLogger;
 import com.lumi.uxpatcher.systemux.ProfileButtonHook;
 import com.lumi.uxpatcher.vrshell.ControlBarHook;
@@ -84,6 +86,8 @@ public class MainHook implements IXposedHookLoadPackage {
         Hooks.run("DOCK-DUMP", lp, DockLayoutDump::install);
         Hooks.run("DROPZONE", lp, DockDropZoneHook::install);
         Hooks.run("BATTERY", lp, BatteryPercentHook::install);
+        Hooks.run("NOTIF-ROWS", lp, NotificationRowsHook::install);
+        Hooks.run("NOTIF-BADGE", lp, NotificationBadgeHook::install);
     }
 
     /** VrShell: window bars (title pill + drag handle) and keyboard only */

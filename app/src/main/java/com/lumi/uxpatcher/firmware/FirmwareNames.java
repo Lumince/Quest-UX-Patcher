@@ -40,7 +40,8 @@ public final class FirmwareNames {
     public static final String[] CONTROL_BAR_ACTIVITIES = {
             "com.oculus.panelapp.controlbar.BaseControlBarActivity",
             "com.oculus.panelapp.controlbar.UnifiedControlBarActivity",
-            "com.oculus.panelapp.controlbar.ControlBarActivity"};
+            "com.oculus.panelapp.controlbar.ControlBarActivity",
+            "com.oculus.panelapp.theatercontrolbar.TheaterControlBarActivity"};
     public static final String CONTROL_BAR_HANDLE_ACTIVITY =
             "com.oculus.panelapp.controlbar.HandleBarControlBarActivity";
     /** The bar's own layout on builds that draw it with plain views (v78); absent where the bar is Compose */

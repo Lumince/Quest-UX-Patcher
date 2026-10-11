@@ -20,6 +20,7 @@ public final class FirmwareNames {
 
     /** The translucent "glass" panel background (dock pill, Library panels, cards). */
     public static final String[] OC_PANEL_BACKGROUND = {
+            "horizonos.ocui.OcPanelBackgroundDrawable",
             "com.oculus.ocui.view.drawable.OCPanelBackgroundDrawable",
             "com.oculus.ocui.OCPanelBackgroundDrawable"};
 

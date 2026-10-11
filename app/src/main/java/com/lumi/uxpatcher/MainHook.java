@@ -21,6 +21,7 @@ import com.lumi.uxpatcher.systemux.NotificationBadgeHook;
 import com.lumi.uxpatcher.systemux.NotificationRowsHook;
 import com.lumi.uxpatcher.systemux.PinningServiceLogger;
 import com.lumi.uxpatcher.systemux.ProfileButtonHook;
+import com.lumi.uxpatcher.vralert.ShutdownConfirmHook;
 import com.lumi.uxpatcher.vrshell.ControlBarHook;
 import com.lumi.uxpatcher.vrshell.KeyboardHooks;
 
@@ -29,6 +30,7 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
 import static com.lumi.uxpatcher.Config.SYSTEMUX_PACKAGE;
 import static com.lumi.uxpatcher.Config.TAG;
+import static com.lumi.uxpatcher.Config.VRALERT_PACKAGE;
 import static com.lumi.uxpatcher.Config.VRSHELL_PACKAGE;
 
 /** Xposed entry point. Decides which hooks run in which package. */
@@ -50,6 +52,8 @@ public class MainHook implements IXposedHookLoadPackage {
             installSystemUx(lp);
         } else if (VRSHELL_PACKAGE.equals(lp.packageName)) {
             installVrShell(lp);
+        } else if (VRALERT_PACKAGE.equals(lp.packageName)) {
+            installVrAlert(lp);
         } else {
             installApp(lp);
         }
@@ -95,5 +99,11 @@ public class MainHook implements IXposedHookLoadPackage {
         Hooks.run("SIDENAV", lp, SideNavHooks::install);
         Hooks.run("CONTROLBAR", lp, ControlBarHook::install);
         Hooks.run("KEYBOARD", lp, KeyboardHooks::install);
+    }
+
+    /** vralertservice: just the Headset Power menu (ShutdownConfirmActivity). */
+    private static void installVrAlert(LoadPackageParam lp) {
+        Hooks.run("PANEL", lp, PanelBackgroundHook::install);
+        Hooks.run("VRALERT", lp, ShutdownConfirmHook::install);
     }
 }

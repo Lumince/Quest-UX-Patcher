@@ -36,6 +36,7 @@ public class MainActivity extends Activity {
 
     /** Force-stop order: apps first, VrShell last (it relaunches everything). Quick Settings dies with Settings. */
     private static final List<String> KILL_ORDER = Arrays.asList(
+            "com.oculus.vralertservice",
             "com.oculus.panelapp.settings",
             "com.oculus.browser",
             "com.oculus.metacam",

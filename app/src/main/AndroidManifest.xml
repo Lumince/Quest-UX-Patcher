@@ -15,6 +15,7 @@
         <package android:name="com.oculus.helpcenter" />
         <package android:name="com.oculus.systemutilities" />
         <package android:name="com.oculus.socialplatform" />
+        <package android:name="com.oculus.vralertservice" />
     </queries>
 
     <application
@@ -28,6 +29,15 @@
         <meta-data android:name="xposedsharedprefs" android:value="true" />
         <meta-data android:name="xposeddescription" android:value="Custom AMOLED background colour, raises the dock pin limit, widens the dock, hides the profile icon." />
         <meta-data android:name="xposedscope"       android:resource="@array/xposed_scope" />
+
+
+        <receiver
+            android:name=".RootCommandReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.lumi.uxpatcher.action.SOFT_REBOOT" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".MainActivity"

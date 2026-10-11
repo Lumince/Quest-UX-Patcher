@@ -40,7 +40,10 @@ public final class PanelBackgroundHook {
         install(lpparam, null);
     }
 
-    /** Replaces the drawable's draw() with a solid fill of its rounded path (no colour hook sees its gradient) */
+    /**
+     * Replaces the drawable's draw() with a solid fill of its rounded path (no colour hook sees its gradient).
+     * Hooks EVERY name in FirmwareNames.OC_PANEL_BACKGROUND that's loadable in this process, not just the first one.
+     */
     public static void install(final LoadPackageParam lpparam, final Gate gate) {
         for (String name : FirmwareNames.OC_PANEL_BACKGROUND) {
             try {
@@ -82,12 +85,12 @@ public final class PanelBackgroundHook {
                             }
                         });
                 Log.i(TAG, "PANEL: hooked " + name + ".draw in " + lpparam.packageName);
-                return;
+                // deliberately no "return" here -- keep trying the rest of the names too
             } catch (ClassNotFoundException ignored) {
-                // try next name
+                // this name doesn't exist in this process -- try the rest
             } catch (Throwable t) {
                 Log.e(TAG, "PANEL: hook failed for " + name + " in " + lpparam.packageName, t);
-                return;
+                // keep trying the remaining names -- one bad match here shouldn't block the others
             }
         }
     }

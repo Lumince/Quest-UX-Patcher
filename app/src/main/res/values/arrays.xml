@@ -13,5 +13,6 @@
         <item>com.oculus.helpcenter</item>
         <item>com.oculus.systemutilities</item>
         <item>com.oculus.socialplatform</item>
+        <item>com.oculus.vralertservice</item>  <!-- Headset Power menu (ShutdownConfirmActivity) -->
     </string-array>
 </resources>

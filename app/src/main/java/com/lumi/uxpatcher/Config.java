@@ -13,7 +13,7 @@ public final class Config {
     public static final String TAG = "UXPatcher";
 
     /** Logged on every load, to show which build is running */
-    public static final String BUILD_ID = "1.0.7";
+    public static final String BUILD_ID = "1.0.8";
 
     // ── Packages ──────────────────────────────────────────────────────────────
     public static final String SYSTEMUX_PACKAGE = "com.oculus.systemux";

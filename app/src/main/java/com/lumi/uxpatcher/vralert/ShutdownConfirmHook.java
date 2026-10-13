@@ -29,7 +29,8 @@ import static com.lumi.uxpatcher.Config.TAG;
  *   - Plain View/ConstraintLayout dialog, not Compose. Hardcoded to a light theme in the
  *     manifest, so none of the existing AMOLED hooks touch it on their own.
  *   - Buttons: sleep_button, cancel_button, power_options_button (reveals power_off_button /
- *     restart_button, both start View.GONE).
+ *     restart_button, both start View.GONE). Older firmware may have no power_options_button;
+ *     in that case restart_button is always visible and the injected Soft Reboot starts visible too.
  *   - Resource ids aren't stable across firmware builds, so every lookup here goes through
  *     Resources.getIdentifier(name, "id", pkg) instead of hardcoded ids.
  *
@@ -148,8 +149,8 @@ public final class ShutdownConfirmHook {
 
     /**
      * Clones Restart's button style and ConstraintLayout.LayoutParams, then re-anchors the copy
-     * below Restart instead of Power Off. Starts GONE like Restart, revealed together when
-     * Power Options is tapped.
+     * below Restart instead of Power Off. Starts GONE if the firmware has a Power Options
+     * sub-menu (revealed together with Restart when tapped), or VISIBLE on older flat-menu firmware.
      *
      * Goes through reflection for the LayoutParams fields since this module doesn't compile
      * against androidx.constraintlayout (same pattern as BatteryPercentHook).
@@ -230,6 +231,10 @@ public final class ShutdownConfirmHook {
                     softReboot.setVisibility(View.VISIBLE);
                 }
             });
+        } else {
+            // Older firmware: flat power menu with no "Power Options" sub-menu -- Restart is
+            // already visible, so Soft Reboot should be visible from the start too.
+            softReboot.setVisibility(View.VISIBLE);
         }
 
         Log.i(TAG, "VRALERT: Soft Reboot button injected");

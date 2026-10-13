@@ -3,6 +3,7 @@ package com.lumi.uxpatcher.systemux;
 import android.util.Log;
 
 import com.lumi.uxpatcher.Config;
+import com.lumi.uxpatcher.Prefs;
 import com.lumi.uxpatcher.firmware.FirmwareNames;
 
 import java.lang.reflect.Method;
@@ -13,12 +14,12 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
 import static com.lumi.uxpatcher.Config.TAG;
 
-/** Debug (Config.LOG_PINNING_API): logs every call and return on the pinning binder. Log: PIN-API */
+/** Debug (Prefs.logPinningApi()): logs every call and return on the pinning binder. Log: PIN-API */
 public final class PinningServiceLogger {
     private PinningServiceLogger() {}
 
     public static void install(final LoadPackageParam lpparam) {
-        if (!Config.LOG_PINNING_API) return;
+        if (!Prefs.logPinningApi()) return;
         try {
             Class<?> binderClass = FirmwareNames.load(lpparam.classLoader, FirmwareNames.PIN_BINDER);
             int count = 0;

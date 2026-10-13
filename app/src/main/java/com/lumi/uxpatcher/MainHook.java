@@ -3,6 +3,7 @@ package com.lumi.uxpatcher;
 import android.util.Log;
 
 import com.lumi.uxpatcher.amoled.AmoledHooks;
+import com.lumi.uxpatcher.Prefs;
 import com.lumi.uxpatcher.amoled.MultiLayerContainerHook;
 import com.lumi.uxpatcher.amoled.PanelBackgroundHook;
 import com.lumi.uxpatcher.amoled.ReactNativeHook;
@@ -44,7 +45,7 @@ public class MainHook implements IXposedHookLoadPackage {
 
         Hooks.run("CONFIG", lp, p -> Prefs.init(p.packageName));
 
-        if (Config.DEBUG_DUMP && Config.DUMP_PACKAGES.contains(lp.packageName)) {
+        if (Prefs.debugDump() && Config.DUMP_PACKAGES.contains(lp.packageName)) {
             Hooks.run("DUMP", lp, HierarchyDump::install);
         }
 

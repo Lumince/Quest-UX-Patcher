@@ -66,6 +66,7 @@ public class MainActivity extends Activity {
     private static final String KEY_VALUE_ENTRY = "ui_value_entry";
     private final java.util.List<ColorCard> colorCards = new java.util.ArrayList<>();
     private Button killBtn;
+    private Switch debugSwitch;
     private FrameLayout snackHost;
     private View snackView;
     private final Runnable snackHide = this::hideSnack;
@@ -75,6 +76,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         prefs = openPrefs();
 
+        if (getActionBar() != null) getActionBar().hide();
         getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         getWindow().setStatusBarColor(COLOR_BG);
         getWindow().setNavigationBarColor(COLOR_BG);
@@ -91,6 +93,62 @@ public class MainActivity extends Activity {
         content.setPadding(dp(wide ? 28 : 20), dp(16), dp(wide ? 28 : 20), dp(8));
         scroll.addView(content, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
+        // ── Header: title + Easter-egg debug toggle ───────────────────────────────────────
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setPadding(dp(wide ? 28 : 20), dp(16), dp(wide ? 28 : 20), dp(4));
+
+        TextView titleTv = new TextView(this);
+        titleTv.setText("UX Patcher");
+        titleTv.setTextColor(COLOR_TEXT);
+        titleTv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+        titleTv.setTypeface(Typeface.DEFAULT_BOLD);
+        header.addView(titleTv, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        debugSwitch = new Switch(this);
+        debugSwitch.setText("Debug");
+        debugSwitch.setTextColor(COLOR_DIM);
+        debugSwitch.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        int[][] dbgStates = {{android.R.attr.state_checked}, {}};
+        debugSwitch.setThumbTintList(new ColorStateList(dbgStates, new int[]{COLOR_ACCENT, COLOR_DIM}));
+        debugSwitch.setTrackTintList(new ColorStateList(dbgStates,
+                new int[]{Color.parseColor("#557B68EE"), Color.parseColor("#33FFFFFF")}));
+        boolean anyDebug = prefs.getBoolean(Prefs.KEY_DEBUG_BG, false)
+                || prefs.getBoolean(Prefs.KEY_DEBUG_DUMP, false)
+                || prefs.getBoolean(Prefs.KEY_LOG_PINNING, false);
+        debugSwitch.setChecked(anyDebug);
+        debugSwitch.setVisibility(
+                anyDebug || prefs.getBoolean("debug_unlocked", false) ? View.VISIBLE : View.GONE);
+        debugSwitch.setOnCheckedChangeListener((b, on) -> {
+            prefs.edit()
+                    .putBoolean(Prefs.KEY_DEBUG_BG, on)
+                    .putBoolean(Prefs.KEY_DEBUG_DUMP, on)
+                    .putBoolean(Prefs.KEY_LOG_PINNING, on)
+                    .apply();
+            pushToGlobal();
+            snackSaved();
+        });
+        header.addView(debugSwitch);
+
+        final int[] tapCount = {0};
+        final long[] lastTap = {0L};
+        titleTv.setOnClickListener(v -> {
+            long now = System.currentTimeMillis();
+            if (now - lastTap[0] > 700) tapCount[0] = 0;
+            lastTap[0] = now;
+            if (++tapCount[0] >= 7) {
+                tapCount[0] = 0;
+                prefs.edit().putBoolean("debug_unlocked", true).apply();
+                debugSwitch.setVisibility(View.VISIBLE);
+                snack("Debug options unlocked", false);
+            }
+        });
+
+        root.addView(header, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
         root.addView(scroll, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
 
@@ -290,6 +348,7 @@ public class MainActivity extends Activity {
             }
         });
     }
+
 
     /** A saved on/off switch, showing {@code def} until the user touches it */
     private Switch prefSwitch(LinearLayout card, String label, String key, boolean def) {
@@ -793,7 +852,10 @@ public class MainActivity extends Activity {
                 "settings put global " + Prefs.G_BG + " " + bg,
                 "settings put global " + Prefs.G_ACCENT + " " + accent,
                 "settings put global " + Prefs.G_TEXT + " " + text,
-                "settings put global " + Prefs.G_HIDE + " " + (hide ? 1 : 0)};
+                "settings put global " + Prefs.G_HIDE + " " + (hide ? 1 : 0),
+                "settings put global " + Prefs.G_DEBUG_BG + " " + (prefs.getBoolean(Prefs.KEY_DEBUG_BG, false) ? 1 : 0),
+                "settings put global " + Prefs.G_DEBUG_DUMP + " " + (prefs.getBoolean(Prefs.KEY_DEBUG_DUMP, false) ? 1 : 0),
+                "settings put global " + Prefs.G_LOG_PINNING + " " + (prefs.getBoolean(Prefs.KEY_LOG_PINNING, false) ? 1 : 0)};
     }
 
     // ── Root / kill ───────────────────────────────────────────────────────────────────────

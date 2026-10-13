@@ -5,7 +5,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 
-import com.lumi.uxpatcher.Config;
+import com.lumi.uxpatcher.Prefs;
 import com.lumi.uxpatcher.firmware.FirmwareNames;
 
 import java.util.HashMap;
@@ -24,7 +24,7 @@ public final class DockLayoutDump {
     private static final WeakHashMap<View, Boolean> DONE = new WeakHashMap<View, Boolean>();
 
     public static void install(final LoadPackageParam lp) {
-        if (!Config.DOCK_LAYOUT_DUMP) return;
+        if (!Prefs.debugDump()) return;
         try {
             Class<?> bar = lp.classLoader.loadClass(FirmwareNames.BAR_VIEW);
             XposedBridge.hookAllConstructors(bar, new XC_MethodHook() {

@@ -4,6 +4,7 @@ import android.util.Log;
 import android.view.View;
 
 import com.lumi.uxpatcher.Config;
+import com.lumi.uxpatcher.Prefs;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
@@ -29,7 +30,7 @@ public final class ReactNativeHook {
                         protected void beforeHookedMethod(MethodHookParam param) {
                             int color = (Integer) param.args[1];
                             int mapped = remap(color);
-                            if (Config.DEBUG_BG) {
+                            if (Prefs.debugBg()) {
                                 Log.d(TAG, "RN: setBackgroundColor #" + Integer.toHexString(color)
                                         + (mapped != color ? " → #" + Integer.toHexString(mapped) : " (kept)")
                                         + " on " + param.args[0].getClass().getSimpleName());

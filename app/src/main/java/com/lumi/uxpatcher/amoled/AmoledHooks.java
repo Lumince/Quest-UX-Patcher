@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.View;
 
 import com.lumi.uxpatcher.Config;
+import com.lumi.uxpatcher.Prefs;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
@@ -58,7 +59,7 @@ public final class AmoledHooks {
                             + Integer.toHexString(color) + " → #" + Integer.toHexString(mapped));
                     if (Color.alpha(mapped) == 255) param.args[0] = toBackground(d);
                     else if (d instanceof ColorDrawable) param.args[0] = new ColorDrawable(mapped);
-                } else if (Config.DEBUG_BG && d != null && color == 0) {
+                } else if (Prefs.debugBg() && d != null && color == 0) {
                     Log.d(TAG, "BG-DEBUG: " + param.thisObject.getClass().getName()
                             + " <- " + d.getClass().getName());
                 }

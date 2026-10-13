@@ -40,6 +40,9 @@ public final class Prefs {
     public static final String KEY_BATT_PERCENT = "battery_percent";
     public static final String KEY_BG_ENABLED = "bg_enabled";
     public static final String KEY_HIDE_NOTIF_BADGE = "hide_notif_badge";
+    public static final String KEY_DEBUG_BG   = "debug_bg";
+    public static final String KEY_DEBUG_DUMP = "debug_dump";
+    public static final String KEY_LOG_PINNING = "log_pinning_api";
 
     /** Stored in place of an RGB value when the colour is not customised. */
     public static final int OFF = -1;
@@ -58,6 +61,9 @@ public final class Prefs {
     public static final String G_BATT_PERCENT = "uxpatcher_battery_percent";
     public static final String G_BG_ENABLED = "uxpatcher_bg_enabled";
     public static final String G_HIDE_NOTIF_BADGE = "uxpatcher_hide_notif_badge";
+    public static final String G_DEBUG_BG    = "uxpatcher_debug_bg";
+    public static final String G_DEBUG_DUMP  = "uxpatcher_debug_dump";
+    public static final String G_LOG_PINNING = "uxpatcher_log_pinning_api";
     public static final String DEFAULT_DOCK_ORDER = "profile,qs,notif,pt";
 
     public static final int DEFAULT_BG = 0xFF000000;
@@ -76,6 +82,9 @@ public final class Prefs {
     private static volatile boolean battPercent = true;
     private static volatile boolean bgEnabled = true;
     private static volatile boolean hideNotifBadge = false;
+    private static volatile boolean debugBg = false;
+    private static volatile boolean debugDump = false;
+    private static volatile boolean logPinning = false;
     private static volatile boolean loaded = false;
     private static boolean xspTried = false;
     private static boolean xspHadValues = false;
@@ -172,6 +181,15 @@ public final class Prefs {
         return loaded;
     }
 
+    /** Whether to log drawable types that reach setBackground unhandled (tag UXPatcher-DRAW) */
+    public static boolean debugBg() { ensureLoaded(); return debugBg; }
+
+    /** Whether to dump the view tree (tag UXPatcher-DUMP) */
+    public static boolean debugDump() { ensureLoaded(); return debugDump; }
+
+    /** Whether to log every pinning binder call (tag PIN-API) */
+    public static boolean logPinningApi() { ensureLoaded(); return logPinning; }
+
     /** Call from handleLoadPackage to read the settings as early as possible */
     public static void init(String pkg) {
         ensureLoaded();
@@ -238,6 +256,9 @@ public final class Prefs {
             String sbp = android.provider.Settings.Global.getString(cr, G_BATT_PERCENT);
             String sbge = android.provider.Settings.Global.getString(cr, G_BG_ENABLED);
             String shnb = android.provider.Settings.Global.getString(cr, G_HIDE_NOTIF_BADGE);
+            String sdbg = android.provider.Settings.Global.getString(cr, G_DEBUG_BG);
+            String sdd  = android.provider.Settings.Global.getString(cr, G_DEBUG_DUMP);
+            String slp  = android.provider.Settings.Global.getString(cr, G_LOG_PINNING);
             if (sb != null) { try { bg = 0xFF000000 | Integer.parseInt(sb.trim()); } catch (NumberFormatException ignored) { } }
             if (sh != null) hide = "1".equals(sh.trim()) || "true".equalsIgnoreCase(sh.trim());
             // non-number = off
@@ -251,6 +272,9 @@ public final class Prefs {
             if (shb != null) hideBattIcon = "1".equals(shb.trim()) || "true".equalsIgnoreCase(shb.trim());
             if (sbp != null) battPercent = !("0".equals(sbp.trim()) || "false".equalsIgnoreCase(sbp.trim()));
             if (shnb != null) hideNotifBadge = "1".equals(shnb.trim()) || "true".equalsIgnoreCase(shnb.trim());
+            if (sdbg != null) debugBg   = "1".equals(sdbg.trim()) || "true".equalsIgnoreCase(sdbg.trim());
+            if (sdd  != null) debugDump = "1".equals(sdd.trim())  || "true".equalsIgnoreCase(sdd.trim());
+            if (slp  != null) logPinning = "1".equals(slp.trim()) || "true".equalsIgnoreCase(slp.trim());
             if (sbge != null) bgEnabled = !("0".equals(sbge.trim()) || "false".equalsIgnoreCase(sbge.trim()));
             if (sd != null && !sd.trim().isEmpty() && !"null".equals(sd.trim())) dockOrder = sd.trim();
             if (sb != null || sh != null || sa != null || st != null || sp != null || su != null || sd != null || sal != null || slf != null || shp != null || shb != null || sbp != null || sbge != null || shnb != null) {

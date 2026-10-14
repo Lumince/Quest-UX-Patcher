@@ -45,7 +45,7 @@ public class MainHook implements IXposedHookLoadPackage {
 
         Hooks.run("CONFIG", lp, p -> Prefs.init(p.packageName));
 
-        if (Prefs.debugDump() && Config.DUMP_PACKAGES.contains(lp.packageName)) {
+        if (Config.DUMP_PACKAGES.contains(lp.packageName)) {
             Hooks.run("DUMP", lp, HierarchyDump::install);
         }
 

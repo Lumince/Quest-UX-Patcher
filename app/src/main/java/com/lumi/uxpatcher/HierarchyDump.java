@@ -14,6 +14,8 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import com.lumi.uxpatcher.Prefs;
+
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.XposedBridge;
@@ -23,7 +25,6 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 final class HierarchyDump {
 
     private static final String TAG = "UXPatcher-DUMP";
-    private static final long DELAY_MS = 4000;
     private static final int MAX_DEPTH = 40;
     private static final Set<View> DONE = Collections.newSetFromMap(new WeakHashMap<View, Boolean>());
 
@@ -41,9 +42,11 @@ final class HierarchyDump {
                     synchronized (DONE) {
                         if (!DONE.add(root)) return;
                     }
-                    root.postDelayed(new Runnable() {
-                        @Override public void run() { dump(root); }
-                    }, DELAY_MS);
+                    root.post(new Runnable() {
+                        @Override public void run() {
+                            if (Prefs.debugDump()) dump(root);
+                        }
+                    });
                 }
             });
             Log.i(TAG, "dump hook installed in " + lpparam.packageName);

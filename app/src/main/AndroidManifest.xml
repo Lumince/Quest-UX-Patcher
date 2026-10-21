@@ -49,7 +49,9 @@
             </intent-filter>
             <layout
                 android:defaultWidth="1000dp"
-                android:defaultHeight="680dp"
+                android:defaultHeight="800dp"
+                android:minWidth="480dp"
+                android:minHeight="400dp" />
                 android:minWidth="480dp"
                 android:minHeight="400dp" />
         </activity>

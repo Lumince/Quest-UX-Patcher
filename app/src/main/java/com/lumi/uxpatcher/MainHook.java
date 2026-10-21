@@ -24,6 +24,7 @@ import com.lumi.uxpatcher.systemux.PinningServiceLogger;
 import com.lumi.uxpatcher.systemux.ProfileButtonHook;
 import com.lumi.uxpatcher.vralert.ShutdownConfirmHook;
 import com.lumi.uxpatcher.vrshell.ControlBarHook;
+import com.lumi.uxpatcher.vrshell.GamepadUnlockHook;
 import com.lumi.uxpatcher.vrshell.KeyboardHooks;
 import com.lumi.uxpatcher.vrshell.PanicRestartHook;
 
@@ -96,12 +97,15 @@ public class MainHook implements IXposedHookLoadPackage {
         Hooks.run("NOTIF-BADGE", lp, NotificationBadgeHook::install);
     }
 
-    /** VrShell: window bars (title pill + drag handle) and keyboard only */
+    /** VrShell: window bars (title pill + drag handle), keyboard, and gamepad unlock */
     private static void installVrShell(LoadPackageParam lp) {
         Hooks.run("SIDENAV", lp, SideNavHooks::install);
         Hooks.run("CONTROLBAR", lp, ControlBarHook::install);
         Hooks.run("KEYBOARD", lp, KeyboardHooks::install);
         Hooks.run("PANIC-RESTART", lp, PanicRestartHook::install);
+        if (Prefs.gamepadUnlock()) {
+            Hooks.run("GAMEPAD-UNLOCK", lp, GamepadUnlockHook::install);
+        }
     }
 
     /** vralertservice: just the Headset Power menu (ShutdownConfirmActivity). */

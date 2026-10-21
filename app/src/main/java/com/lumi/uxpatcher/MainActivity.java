@@ -178,6 +178,7 @@ public class MainActivity extends Activity {
         new ColorCard(left, "ACCENT COLOR (icons, sliders)", Prefs.KEY_ACCENT, true, 0xFFFFFF, "Default");
         new ColorCard(left, "TEXT COLOR", Prefs.KEY_TEXT, true, 0xFFFFFF, "Default");
         buildDockCard(left, right);
+        buildGamepadCard(left);
 
         killBtn = new Button(this);
         killBtn.setText("Kill Processes");
@@ -227,6 +228,26 @@ public class MainActivity extends Activity {
         LinearLayout lib = card(right);
         sectionLabel(lib, "LIBRARY");
         prefSwitch(lib, "Force Unknown Sources tab visible", Prefs.KEY_UNKNOWN_TAB, true);
+    }
+
+    private void buildGamepadCard(LinearLayout parent) {
+        LinearLayout card = card(parent);
+        card.setVisibility(View.GONE);
+        sectionLabel(card, "GAMEPAD MODE");
+        prefSwitch(card, "Enable gamepad unlock", Prefs.KEY_GAMEPAD_UNLOCK, false);
+        Button configBtn = flatButton("Configure allowed apps", COLOR_BUTTON2);
+        configBtn.setOnClickListener(v -> startActivity(
+                new android.content.Intent(this, AppPickerActivity.class)));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, dp(6), 0, 0);
+        card.addView(configBtn, lp);
+        new Thread(() -> {
+            boolean enabled = runAsRoot(
+                    "grep -q 'gamepad_mode_toggle_enabled.*value=\"true\"'" +
+                    " /data/data/com.lumi.singularity/shared_prefs/singularity_prefs.xml");
+            runOnUiThread(() -> card.setVisibility(enabled ? View.VISIBLE : View.GONE));
+        }, "UXPatcher-gamepad-check").start();
     }
 
     // ── Dock button order (drag to rearrange) ─────────────────────────────────────────────
@@ -855,7 +876,9 @@ public class MainActivity extends Activity {
                 "settings put global " + Prefs.G_HIDE + " " + (hide ? 1 : 0),
                 "settings put global " + Prefs.G_DEBUG_BG + " " + (prefs.getBoolean(Prefs.KEY_DEBUG_BG, false) ? 1 : 0),
                 "settings put global " + Prefs.G_DEBUG_DUMP + " " + (prefs.getBoolean(Prefs.KEY_DEBUG_DUMP, false) ? 1 : 0),
-                "settings put global " + Prefs.G_LOG_PINNING + " " + (prefs.getBoolean(Prefs.KEY_LOG_PINNING, false) ? 1 : 0)};
+                "settings put global " + Prefs.G_LOG_PINNING + " " + (prefs.getBoolean(Prefs.KEY_LOG_PINNING, false) ? 1 : 0),
+                "settings put global " + Prefs.G_GAMEPAD_UNLOCK + " " + (prefs.getBoolean(Prefs.KEY_GAMEPAD_UNLOCK, false) ? 1 : 0),
+                "settings put global " + Prefs.G_GAMEPAD_WHITELIST + " " + prefs.getString(Prefs.KEY_GAMEPAD_WHITELIST, "")};
     }
 
     // ── Root / kill ───────────────────────────────────────────────────────────────────────

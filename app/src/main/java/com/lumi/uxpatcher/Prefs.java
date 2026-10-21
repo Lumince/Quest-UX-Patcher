@@ -43,6 +43,10 @@ public final class Prefs {
     public static final String KEY_DEBUG_BG   = "debug_bg";
     public static final String KEY_DEBUG_DUMP = "debug_dump";
     public static final String KEY_LOG_PINNING = "log_pinning_api";
+    public static final String KEY_GAMEPAD_UNLOCK   = "gamepad_unlock_on";
+    public static final String KEY_GAMEPAD_WHITELIST = "gamepad_whitelist";
+    public static final String G_GAMEPAD_UNLOCK     = "uxpatcher_gamepad_unlock";
+    public static final String G_GAMEPAD_WHITELIST  = "uxpatcher_gamepad_whitelist";
 
     /** Stored in place of an RGB value when the colour is not customised. */
     public static final int OFF = -1;
@@ -85,6 +89,7 @@ public final class Prefs {
     private static volatile boolean debugBg = false;
     private static volatile boolean debugDump = false;
     private static volatile boolean logPinning = false;
+    private static volatile boolean gamepadUnlock = false;
     private static volatile boolean loaded = false;
     private static boolean xspTried = false;
     private static boolean xspHadValues = false;
@@ -190,12 +195,16 @@ public final class Prefs {
     /** Whether to log every pinning binder call (tag PIN-API) */
     public static boolean logPinningApi() { ensureLoaded(); return logPinning; }
 
+    /** Whether gamepad capture unlock is enabled */
+    public static boolean gamepadUnlock() { ensureLoaded(); return gamepadUnlock; }
+
     /** Call from handleLoadPackage to read the settings as early as possible */
     public static void init(String pkg) {
         ensureLoaded();
         Log.i(TAG, "CONFIG: " + pkg + " bg=#" + hex(bg) + " hideProfile=" + hide + " hidePt=" + hidePt + " hideBattIcon=" + hideBattIcon
                 + " pinLimit=" + pinLimit + " unknownTab=" + unknownTab
                 + " accent=" + hexOrOff(accent) + " text=" + hexOrOff(text)
+                + " gamepadUnlock=" + gamepadUnlock
                 + " (source=" + source + (loaded ? "" : ", waiting for app context") + ")");
     }
 
@@ -207,12 +216,13 @@ public final class Prefs {
                 Integer c = null; Boolean h = null; Integer ac = null, tx = null;
                 Boolean pl = null, ut = null;
                 String dord = null;
-                Boolean al = null, lf = null, hp = null, hb = null, bp = null, bge = null, hnb = null;
+                Boolean al = null, lf = null, hp = null, hb = null, bp = null, bge = null, hnb = null, gu = null;
                 Object[] r = Xsp.read();
                 if (r != null) {
                     c = (Integer) r[0]; h = (Boolean) r[1]; ac = (Integer) r[2]; tx = (Integer) r[3];
                     pl = (Boolean) r[4]; ut = (Boolean) r[5]; dord = (String) r[6]; al = (Boolean) r[7]; lf = (Boolean) r[8];
                     hp = (Boolean) r[9]; hb = (Boolean) r[10]; bp = (Boolean) r[11]; bge = (Boolean) r[12]; hnb = (Boolean) r[13];
+                    gu = (Boolean) r[14];
                 }
                 if (c != null) bg = 0xFF000000 | c;
                 if (h != null) hide = h;
@@ -228,7 +238,8 @@ public final class Prefs {
                 if (bp != null) battPercent = bp;
                 if (bge != null) bgEnabled = bge;
                 if (hnb != null) hideNotifBadge = hnb;
-                if (c != null || h != null || ac != null || tx != null || pl != null || ut != null || dord != null || al != null || lf != null || hp != null || hb != null || bp != null || bge != null || hnb != null) {
+                if (gu != null) gamepadUnlock = gu;
+                if (c != null || h != null || ac != null || tx != null || pl != null || ut != null || dord != null || al != null || lf != null || hp != null || hb != null || bp != null || bge != null || hnb != null || gu != null) {
                     xspHadValues = true;
                     source = "XSharedPreferences";
                 }
@@ -259,6 +270,7 @@ public final class Prefs {
             String sdbg = android.provider.Settings.Global.getString(cr, G_DEBUG_BG);
             String sdd  = android.provider.Settings.Global.getString(cr, G_DEBUG_DUMP);
             String slp  = android.provider.Settings.Global.getString(cr, G_LOG_PINNING);
+            String sgu  = android.provider.Settings.Global.getString(cr, G_GAMEPAD_UNLOCK);
             if (sb != null) { try { bg = 0xFF000000 | Integer.parseInt(sb.trim()); } catch (NumberFormatException ignored) { } }
             if (sh != null) hide = "1".equals(sh.trim()) || "true".equalsIgnoreCase(sh.trim());
             // non-number = off
@@ -275,9 +287,10 @@ public final class Prefs {
             if (sdbg != null) debugBg   = "1".equals(sdbg.trim()) || "true".equalsIgnoreCase(sdbg.trim());
             if (sdd  != null) debugDump = "1".equals(sdd.trim())  || "true".equalsIgnoreCase(sdd.trim());
             if (slp  != null) logPinning = "1".equals(slp.trim()) || "true".equalsIgnoreCase(slp.trim());
+            if (sgu  != null) gamepadUnlock = "1".equals(sgu.trim()) || "true".equalsIgnoreCase(sgu.trim());
             if (sbge != null) bgEnabled = !("0".equals(sbge.trim()) || "false".equalsIgnoreCase(sbge.trim()));
             if (sd != null && !sd.trim().isEmpty() && !"null".equals(sd.trim())) dockOrder = sd.trim();
-            if (sb != null || sh != null || sa != null || st != null || sp != null || su != null || sd != null || sal != null || slf != null || shp != null || shb != null || sbp != null || sbge != null || shnb != null) {
+            if (sb != null || sh != null || sa != null || st != null || sp != null || su != null || sd != null || sal != null || slf != null || shp != null || shb != null || sbp != null || sbge != null || shnb != null || sgu != null) {
                 source = xspHadValues ? "Settings.Global (overrides XSharedPreferences)" : "Settings.Global";
             }
             loaded = true;
@@ -309,7 +322,8 @@ public final class Prefs {
             Boolean bp = x.contains(KEY_BATT_PERCENT) ? Boolean.valueOf(x.getBoolean(KEY_BATT_PERCENT, true)) : null;
             Boolean bge = x.contains(KEY_BG_ENABLED) ? Boolean.valueOf(x.getBoolean(KEY_BG_ENABLED, true)) : null;
             Boolean hnb = x.contains(KEY_HIDE_NOTIF_BADGE) ? Boolean.valueOf(x.getBoolean(KEY_HIDE_NOTIF_BADGE, false)) : null;
-            return new Object[]{c, h, ac, tx, pl, ut, dord, al, lf, hp, hb, bp, bge, hnb};
+            Boolean gu = x.contains(KEY_GAMEPAD_UNLOCK) ? Boolean.valueOf(x.getBoolean(KEY_GAMEPAD_UNLOCK, false)) : null;
+            return new Object[]{c, h, ac, tx, pl, ut, dord, al, lf, hp, hb, bp, bge, hnb, gu};
         }
     }
 

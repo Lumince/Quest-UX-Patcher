@@ -121,4 +121,8 @@ public final class Config {
 
     /** Log every call and return of the pinning binder (tag PIN-API) */
     public static final boolean LOG_PINNING_API = false;
+
+    // ── Gamepad mode ──────────────────────────────────────────────────────────
+    /** Remove the per-app allowlist that gates Xbox controller emulation (gamepad mode) */
+    public static final boolean GAMEPAD_UNLOCK = true;
 }

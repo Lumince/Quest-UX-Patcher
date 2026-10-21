@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+
     <queries>
         <package android:name="com.oculus.systemux" />
         <package android:name="com.oculus.panelapp.settings" />
@@ -52,6 +54,15 @@
                 android:defaultHeight="800dp"
                 android:minWidth="480dp"
                 android:minHeight="400dp" />
+        </activity>
+
+        <activity
+            android:name=".AppPickerActivity"
+            android:label="Gamepad Allowed Apps"
+            android:exported="false">
+            <layout
+                android:defaultWidth="900dp"
+                android:defaultHeight="840dp"
                 android:minWidth="480dp"
                 android:minHeight="400dp" />
         </activity>

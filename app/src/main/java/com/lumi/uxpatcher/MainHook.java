@@ -25,6 +25,7 @@ import com.lumi.uxpatcher.systemux.ProfileButtonHook;
 import com.lumi.uxpatcher.vralert.ShutdownConfirmHook;
 import com.lumi.uxpatcher.vrshell.ControlBarHook;
 import com.lumi.uxpatcher.vrshell.KeyboardHooks;
+import com.lumi.uxpatcher.vrshell.PanicRestartHook;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
@@ -100,6 +101,7 @@ public class MainHook implements IXposedHookLoadPackage {
         Hooks.run("SIDENAV", lp, SideNavHooks::install);
         Hooks.run("CONTROLBAR", lp, ControlBarHook::install);
         Hooks.run("KEYBOARD", lp, KeyboardHooks::install);
+        Hooks.run("PANIC-RESTART", lp, PanicRestartHook::install);
     }
 
     /** vralertservice: just the Headset Power menu (ShutdownConfirmActivity). */

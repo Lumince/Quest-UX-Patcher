@@ -246,7 +246,12 @@ public class MainActivity extends Activity {
             boolean enabled = runAsRoot(
                     "grep -q 'gamepad_mode_toggle_enabled.*value=\"true\"'" +
                     " /data/data/com.lumi.singularity/shared_prefs/singularity_prefs.xml");
-            runOnUiThread(() -> card.setVisibility(enabled ? View.VISIBLE : View.GONE));
+            runOnUiThread(() -> {
+                card.setVisibility(enabled ? View.VISIBLE : View.GONE);
+                getWindow().setLayout(
+                    dp(1000),
+                    dp(enabled ? 800 : 680));
+            });
         }, "UXPatcher-gamepad-check").start();
     }
 

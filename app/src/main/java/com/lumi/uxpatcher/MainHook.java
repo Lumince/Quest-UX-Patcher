@@ -18,6 +18,7 @@ import com.lumi.uxpatcher.systemux.DockStatus;
 import com.lumi.uxpatcher.systemux.DockPinLimitHook;
 import com.lumi.uxpatcher.systemux.DockScrollHook;
 import com.lumi.uxpatcher.systemux.DockWidenHook;
+import com.lumi.uxpatcher.systemux.DestinationUiSuppressHook;
 import com.lumi.uxpatcher.systemux.NotificationBadgeHook;
 import com.lumi.uxpatcher.systemux.NotificationRowsHook;
 import com.lumi.uxpatcher.systemux.PinningServiceLogger;
@@ -26,6 +27,7 @@ import com.lumi.uxpatcher.vralert.ShutdownConfirmHook;
 import com.lumi.uxpatcher.vrshell.ControlBarHook;
 import com.lumi.uxpatcher.vrshell.GamepadUnlockHook;
 import com.lumi.uxpatcher.vrshell.KeyboardHooks;
+import com.lumi.uxpatcher.vrshell.KeyboardShortcutHook;
 import com.lumi.uxpatcher.vrshell.PanicRestartHook;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
@@ -95,6 +97,7 @@ public class MainHook implements IXposedHookLoadPackage {
         Hooks.run("BATTERY", lp, BatteryPercentHook::install);
         Hooks.run("NOTIF-ROWS", lp, NotificationRowsHook::install);
         Hooks.run("NOTIF-BADGE", lp, NotificationBadgeHook::install);
+        Hooks.run("DEST-SUPPRESS", lp, DestinationUiSuppressHook::install);
     }
 
     /** VrShell: window bars (title pill + drag handle), keyboard, and gamepad unlock */
@@ -103,6 +106,7 @@ public class MainHook implements IXposedHookLoadPackage {
         Hooks.run("CONTROLBAR", lp, ControlBarHook::install);
         Hooks.run("KEYBOARD", lp, KeyboardHooks::install);
         Hooks.run("PANIC-RESTART", lp, PanicRestartHook::install);
+        Hooks.run("SHORTCUT-GUARD", lp, KeyboardShortcutHook::install);
         if (Prefs.gamepadUnlock()) {
             Hooks.run("GAMEPAD-UNLOCK", lp, GamepadUnlockHook::install);
         }

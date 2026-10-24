@@ -78,6 +78,13 @@ public final class FirmwareNames {
     /** First AIDL method (FIRST_CALL_TRANSACTION). */
     public static final int RESIZE_IPC_TRANSACTION = 0x65;
 
+
+    // ── VrShell keyboard shortcut handler ────────────────────────────────────────────────
+    /** Dispatches keyboard shortcut actions */
+    public static final String[] KEYBOARD_SHORTCUT_HANDLER = {
+            "com.oculus.vrshell.input.KeyboardShortcutHandler",
+            "com.oculus.vrshell.KeyboardShortcutHandler"};
+
     // ── helpers ───────────────────────────────────────────────────────────────────────────
     /** Loads the first class in {@code names} that exists. */
     public static Class<?> load(ClassLoader cl, String... names) throws ClassNotFoundException {

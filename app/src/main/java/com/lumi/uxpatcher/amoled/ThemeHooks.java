@@ -194,7 +194,21 @@ public final class ThemeHooks {
             return color;
         }
         float v = neutralBrightness(color, 153);
-        if (v < 0) return color;
+        if (v < 0) {
+            float[] d = RecordingCanvasHook.drawSize(args);
+            // Meta's green "on" toggle track (seen: drawRoundRect 60x35 #ff2ad116) -> darkened accent
+            if (d != null && Math.min(d[0], d[1]) <= SHAPE_MAX_SIDE && isGreen(color)) {
+                float[] hsv = new float[3];
+                android.graphics.Color.colorToHSV(sAccent, hsv);
+                hsv[2] = hsv[2] * 0.55f;
+                int out = (a << 24) | (android.graphics.Color.HSVToColor(hsv) & 0x00FFFFFF);
+                log("accent-green", call + " " + Math.round(d[0]) + "x" + Math.round(d[1]), color, out);
+                return out;
+            }
+            // DIAG: coloured fills no rule touches (button fills etc.). Capped by room().
+            probe("shape-coloured-kept", call + (d == null ? "" : " " + Math.round(d[0]) + "x" + Math.round(d[1])), color);
+            return color;
+        }
         float[] wh = RecordingCanvasHook.drawSize(args);
         if (wh != null) {
             float mn = Math.min(wh[0], wh[1]);
@@ -279,6 +293,17 @@ public final class ThemeHooks {
         else h = (r - g) / d + 4f;
         h *= 60f;
         return h < 0 ? h + 360f : h;
+    }
+
+    /** Saturated green (hue 80..170): Meta's toggle "on" colour */
+    static boolean isGreen(int color) {
+        int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
+        int mx = Math.max(r, Math.max(g, b)), mn = Math.min(r, Math.min(g, b));
+        if (mx == 0) return false;
+        float s = (mx - mn) / (float) mx, v = mx / 255f;
+        if (s < 0.3f || v < 0.3f) return false;
+        float h = hue(r, g, b, mx, mn);
+        return h >= 80f && h <= 170f;
     }
 
     /** Meta's cyan (hue 175..235, saturated, bright): keyboard icons and labels */

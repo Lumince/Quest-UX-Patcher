@@ -19,6 +19,7 @@ import com.lumi.uxpatcher.systemux.DockPinLimitHook;
 import com.lumi.uxpatcher.systemux.DockScrollHook;
 import com.lumi.uxpatcher.systemux.DockWidenHook;
 import com.lumi.uxpatcher.systemux.DestinationUiSuppressHook;
+import com.lumi.uxpatcher.systemux.SecurityLockThemeHook;
 import com.lumi.uxpatcher.systemux.NotificationBadgeHook;
 import com.lumi.uxpatcher.systemux.NotificationRowsHook;
 import com.lumi.uxpatcher.systemux.PinningServiceLogger;
@@ -80,6 +81,9 @@ public class MainHook implements IXposedHookLoadPackage {
         Hooks.run("GRADIENT", lp, p -> GradientAmoled.install(p, Config.GRADIENT_THRESHOLD));
         Hooks.run("SIDENAV", lp, SideNavHooks::install);
         Hooks.run("MULTILAYER", lp, MultiLayerContainerHook::install);
+        if ("com.oculus.panelapp.settings".equals(lp.packageName)) {
+            Hooks.run("SECURITY-LOCK", lp, SecurityLockThemeHook::install);   // passcode buttons / toggles
+        }
         if ("com.oculus.panelapp.library".equals(lp.packageName)) {
             Hooks.run("UNKNOWN-TAB", lp, UnknownSourcesTabHook::install);   // keep Unknown Sources visible
         }
@@ -103,6 +107,7 @@ public class MainHook implements IXposedHookLoadPackage {
         Hooks.run("NOTIF-ROWS", lp, NotificationRowsHook::install);
         Hooks.run("NOTIF-BADGE", lp, NotificationBadgeHook::install);
         Hooks.run("DEST-SUPPRESS", lp, DestinationUiSuppressHook::install);
+        Hooks.run("SECURITY-LOCK", lp, SecurityLockThemeHook::install);
     }
 
     /** VrShell: window bars (title pill + drag handle), keyboard, and gamepad unlock */

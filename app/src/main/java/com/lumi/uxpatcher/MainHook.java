@@ -29,6 +29,7 @@ import com.lumi.uxpatcher.vrshell.GamepadUnlockHook;
 import com.lumi.uxpatcher.vrshell.KeyboardHooks;
 import com.lumi.uxpatcher.vrshell.KeyboardShortcutHook;
 import com.lumi.uxpatcher.vrshell.PanicRestartHook;
+import com.lumi.uxpatcher.vrlockscreen.LockscreenThemeHook;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
@@ -37,6 +38,7 @@ import static com.lumi.uxpatcher.Config.SYSTEMUX_PACKAGE;
 import static com.lumi.uxpatcher.Config.TAG;
 import static com.lumi.uxpatcher.Config.VRALERT_PACKAGE;
 import static com.lumi.uxpatcher.Config.VRSHELL_PACKAGE;
+import static com.lumi.uxpatcher.Config.VRLOCKSCREEN_PACKAGE;
 
 /** Xposed entry point. Decides which hooks run in which package. */
 public class MainHook implements IXposedHookLoadPackage {
@@ -59,6 +61,8 @@ public class MainHook implements IXposedHookLoadPackage {
             installVrShell(lp);
         } else if (VRALERT_PACKAGE.equals(lp.packageName)) {
             installVrAlert(lp);
+        } else if (VRLOCKSCREEN_PACKAGE.equals(lp.packageName)) {
+            installVrLockscreen(lp);
         } else {
             installApp(lp);
         }
@@ -116,5 +120,16 @@ public class MainHook implements IXposedHookLoadPackage {
     private static void installVrAlert(LoadPackageParam lp) {
         Hooks.run("PANEL", lp, PanelBackgroundHook::install);
         Hooks.run("VRALERT", lp, ShutdownConfirmHook::install);
+    }
+
+    /** VrLockscreen: passcode / PIN entry and biometric prompt UI. */
+    private static void installVrLockscreen(LoadPackageParam lp) {
+        Hooks.run("AMOLED",     lp, AmoledHooks::install);
+        Hooks.run("RN",         lp, ReactNativeHook::install);
+        Hooks.run("PANEL",      lp, PanelBackgroundHook::install);
+        Hooks.run("GRADIENT",   lp, p -> GradientAmoled.install(p, Config.GRADIENT_THRESHOLD));
+        Hooks.run("MULTILAYER", lp, MultiLayerContainerHook::install);
+        Hooks.run("LOCKSCREEN", lp, LockscreenThemeHook::install);
+        Hooks.run("WIN-DUMP", lp, WindowDumpHook::install);
     }
 }

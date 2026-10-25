@@ -14,5 +14,6 @@
         <item>com.oculus.systemutilities</item>
         <item>com.oculus.socialplatform</item>
         <item>com.oculus.vralertservice</item>  <!-- Headset Power menu (ShutdownConfirmActivity) -->
+        <item>com.oculus.os.vrlockscreen</item>   <!-- Lock screen / passcode UI -->
     </string-array>
 </resources>

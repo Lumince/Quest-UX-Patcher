@@ -19,7 +19,8 @@ public final class Config {
     public static final String SYSTEMUX_PACKAGE = "com.oculus.systemux";
     public static final String VRSHELL_PACKAGE  = "com.oculus.vrshell";
     public static final String SOCIAL_PACKAGE   = "com.oculus.socialplatform";
-    public static final String VRALERT_PACKAGE  = "com.oculus.vralertservice";
+    public static final String VRALERT_PACKAGE      = "com.oculus.vralertservice";
+    public static final String VRLOCKSCREEN_PACKAGE = "com.oculus.os.vrlockscreen";
     public static final String MODULE_PACKAGE   = "com.lumi.uxpatcher";
 
     /** Packages the module hooks. Keep in sync with res/values/arrays.xml. */
@@ -37,7 +38,8 @@ public final class Config {
             "com.oculus.helpcenter",                // Help & Tips
             "com.oculus.systemutilities",           // Files
             SOCIAL_PACKAGE,                         // Profile / Social panel
-            VRALERT_PACKAGE                         // Headset Power menu
+            VRALERT_PACKAGE,                        // Headset Power menu
+            VRLOCKSCREEN_PACKAGE                    // Lock screen / passcode UI
     )));
 
     // ── AMOLED colour rules ───────────────────────────────────────────────────

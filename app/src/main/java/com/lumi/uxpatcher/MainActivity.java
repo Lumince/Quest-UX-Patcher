@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
             "com.oculus.horizon",
             SYSTEMUX,
             "com.oculus.panelapp.library",
+            "com.oculus.os.vrlockscreen",
             VRSHELL
     );
 

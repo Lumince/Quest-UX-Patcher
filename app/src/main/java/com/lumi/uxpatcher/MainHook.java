@@ -29,6 +29,7 @@ import com.lumi.uxpatcher.vrshell.GamepadUnlockHook;
 import com.lumi.uxpatcher.vrshell.KeyboardHooks;
 import com.lumi.uxpatcher.vrshell.KeyboardShortcutHook;
 import com.lumi.uxpatcher.vrshell.PanicRestartHook;
+import com.lumi.uxpatcher.vrshell.ToastThemeHook;
 import com.lumi.uxpatcher.vrlockscreen.LockscreenThemeHook;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
@@ -111,6 +112,7 @@ public class MainHook implements IXposedHookLoadPackage {
         Hooks.run("KEYBOARD", lp, KeyboardHooks::install);
         Hooks.run("PANIC-RESTART", lp, PanicRestartHook::install);
         Hooks.run("SHORTCUT-GUARD", lp, KeyboardShortcutHook::install);
+        Hooks.run("TOAST-THEME", lp, ToastThemeHook::install);
         if (Prefs.gamepadUnlock()) {
             Hooks.run("GAMEPAD-UNLOCK", lp, GamepadUnlockHook::install);
         }

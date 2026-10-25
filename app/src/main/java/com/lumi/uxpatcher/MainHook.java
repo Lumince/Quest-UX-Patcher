@@ -31,6 +31,7 @@ import com.lumi.uxpatcher.vrshell.KeyboardHooks;
 import com.lumi.uxpatcher.vrshell.KeyboardShortcutHook;
 import com.lumi.uxpatcher.vrshell.PanicRestartHook;
 import com.lumi.uxpatcher.vrshell.ToastThemeHook;
+import com.lumi.uxpatcher.debug.WindowDumpHook;
 import com.lumi.uxpatcher.vrlockscreen.LockscreenThemeHook;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
@@ -118,6 +119,7 @@ public class MainHook implements IXposedHookLoadPackage {
         Hooks.run("PANIC-RESTART", lp, PanicRestartHook::install);
         Hooks.run("SHORTCUT-GUARD", lp, KeyboardShortcutHook::install);
         Hooks.run("TOAST-THEME", lp, ToastThemeHook::install);
+        if (Prefs.debugDump()) Hooks.run("WIN-DUMP", lp, WindowDumpHook::install);
         if (Prefs.gamepadUnlock()) {
             Hooks.run("GAMEPAD-UNLOCK", lp, GamepadUnlockHook::install);
         }
@@ -137,6 +139,6 @@ public class MainHook implements IXposedHookLoadPackage {
         Hooks.run("GRADIENT",   lp, p -> GradientAmoled.install(p, Config.GRADIENT_THRESHOLD));
         Hooks.run("MULTILAYER", lp, MultiLayerContainerHook::install);
         Hooks.run("LOCKSCREEN", lp, LockscreenThemeHook::install);
-        Hooks.run("WIN-DUMP", lp, WindowDumpHook::install);
+        if (Prefs.debugDump()) Hooks.run("WIN-DUMP", lp, WindowDumpHook::install);   // Debug switch
     }
 }

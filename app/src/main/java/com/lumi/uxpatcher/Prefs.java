@@ -189,7 +189,7 @@ public final class Prefs {
     /** Whether to log drawable types that reach setBackground unhandled (tag UXPatcher-DRAW) */
     public static boolean debugBg() { ensureLoaded(); return debugBg; }
 
-    /** Whether to dump the view tree (tag UXPatcher-DUMP) */
+    /** Whether to dump view trees (tags UXPatcher-DUMP, UXPatcher-WIN) */
     public static boolean debugDump() { ensureLoaded(); return debugDump; }
 
     /** Whether to log every pinning binder call (tag PIN-API) */

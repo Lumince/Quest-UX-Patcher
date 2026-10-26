@@ -923,13 +923,13 @@ public class MainActivity extends Activity {
         new Thread(() -> {
             for (String c : cmds) runAsRoot(c);
 
-            // one root shell for all force-stops, so the processes die together
+            // one root shell, every force-stop started at once (in the background), then wait for all
             List<String> order = killOrder();
-            StringBuilder all = new StringBuilder();
+            StringBuilder all = new StringBuilder("pids=''; ");
             for (String pkg : order) {
-                if (all.length() > 0) all.append("; ");
-                all.append("am force-stop ").append(pkg);
+                all.append("am force-stop ").append(pkg).append(" & pids=\"$pids $!\"; ");
             }
+            all.append("rc=0; for p in $pids; do wait $p || rc=1; done; exit $rc");
             boolean success = runAsRoot(all.toString());
             int stopped = success ? order.size() : 0, failed = success ? 0 : order.size();
             final int ok = stopped, bad = failed;

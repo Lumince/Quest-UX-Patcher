@@ -72,6 +72,10 @@ public final class RecordingCanvasHook {
                         if (mode == 0) return;          // not inside a gated view
                     }
                     probeDraw(param, paint, color, mode);
+                    if (gate == null && Config.SIDENAV_SHADOW_REMOVE && isSideNavShadow(param, paint, color)) {
+                        param.setResult(null); // skip the draw: the scroll shadow never appears
+                        return;
+                    }
                     if (paint.getShader() != null) {
                         // colour is irrelevant while a shader is set; only a gate may flatten it
                         if (Prefs.bgEnabled() && gate != null && gate.flattenShader(mode, drawSize(param.args))) {
@@ -171,6 +175,16 @@ public final class RecordingCanvasHook {
         if (DRAW_SEEN.add(key)) {
             Log.i("UXPatcher-DRAW", key + " size=" + size);
         }
+    }
+
+    /** The sidebar's scroll shadow: a black LinearGradient drawRect about as wide as the 340px nav */
+    private static boolean isSideNavShadow(XC_MethodHook.MethodHookParam param,
+                                           android.graphics.Paint paint, int color) {
+        if (!"drawRect".equals(param.method.getName())) return false;
+        if (!(paint.getShader() instanceof android.graphics.LinearGradient)) return false;
+        if (color != 0xFF000000) return false;
+        float[] wh = drawSize(param.args);
+        return wh != null && wh[0] >= 330f && wh[0] <= 350f && wh[1] <= 300f;
     }
 
     /** Width/height of a rect-like draw call, or null */

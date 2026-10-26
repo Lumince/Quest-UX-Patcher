@@ -63,6 +63,8 @@ public final class Config {
 
     /** Tiles above: the white/light grey hover highlight takes the background colour (same alpha) */
     public static final boolean TILE_HOVER_BG = true;
+    /** Drop the black gradient the OCUI left sidebar draws over its list while scrolling */
+    public static final boolean SIDENAV_SHADOW_REMOVE = true;
 
     /** Grey of the VrShell window drag line (RGB, alpha kept) */
     public static final int CONTROL_HANDLE_COLOR = 0x808080;

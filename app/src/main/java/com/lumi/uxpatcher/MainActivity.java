@@ -243,10 +243,20 @@ public class MainActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         lp.setMargins(0, dp(6), 0, 0);
         card.addView(configBtn, lp);
+        gamepadCard = card; // checked from onResume
+    }
+
+    private LinearLayout gamepadCard;
+
+    /** Re-reads the OS gamepad setting and shows/hides the card (runs on every launch/resume) */
+    private void checkGamepadMode() {
+        final LinearLayout card = gamepadCard;
+        if (card == null) return;
         new Thread(() -> {
+            // Ask the OS config itself, not Singularity's saved toggle
             boolean enabled = runAsRoot(
-                    "grep -q 'gamepad_mode_toggle_enabled.*value=\"true\"'" +
-                    " /data/data/com.lumi.singularity/shared_prefs/singularity_prefs.xml");
+                    "grep -qiE '^oculus_systemshell:emulated_gamepad_shell_enabled,(.*,)?[[:space:]]*true[[:space:]]*$'" +
+                    " /data/data/com.oculus.vrshell/files/deviceconfig_cache_v2.txt", true);
             runOnUiThread(() -> {
                 card.setVisibility(enabled ? View.VISIBLE : View.GONE);
                 getWindow().setLayout(
@@ -254,6 +264,12 @@ public class MainActivity extends Activity {
                     dp(enabled ? 800 : 680));
             });
         }, "UXPatcher-gamepad-check").start();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkGamepadMode();
     }
 
     // ── Dock button order (drag to rearrange) ─────────────────────────────────────────────
@@ -927,9 +943,13 @@ public class MainActivity extends Activity {
     }
 
     /** Runs `su -c cmd`. @return true if it exited with 0 */
-    private static boolean runAsRoot(String cmd) {
+    private static boolean runAsRoot(String cmd) { return runAsRoot(cmd, false); }
+
+    private static boolean runAsRoot(String cmd, boolean mountMaster) {
         try {
-            Process proc = Runtime.getRuntime().exec(new String[]{"su", "-c", cmd});
+            Process proc = Runtime.getRuntime().exec(mountMaster
+                    ? new String[]{"su", "--mount-master", "-c", cmd}
+                    : new String[]{"su", "-c", cmd});
             BufferedReader stdout = new BufferedReader(new InputStreamReader(proc.getInputStream()));
             BufferedReader stderr = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
             String line;

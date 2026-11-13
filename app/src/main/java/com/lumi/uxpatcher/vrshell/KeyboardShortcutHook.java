@@ -23,8 +23,8 @@ public final class KeyboardShortcutHook {
             "oculus_systemshell:oculus_vrshell_is_navigator_enabled,";
     private static final String SHELL_INPUT_FILTER =
             "com.oculus.vrshell.input.ShellInputFilter";
-    private static final String SHELL_APPLICATION =
-            "com.oculus.vrshell.ShellApplication";
+
+    private static volatile boolean sNavigatorEnabled = true;
 
     public static void install(LoadPackageParam lpparam) {
         Class<?> filterClass;
@@ -35,28 +35,9 @@ public final class KeyboardShortcutHook {
             return;
         }
 
-        // ── Diagnostic: hook frameCommand to log every call site ──────────────
-        try {
-            Class<?> appClass = lpparam.classLoader.loadClass(SHELL_APPLICATION);
-            XposedBridge.hookAllMethods(appClass, "frameCommand", new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam param) {
-                    String cmd = param.args.length > 0
-                            ? String.valueOf(param.args[0]) : "<null>";
-                    StackTraceElement[] st = Thread.currentThread().getStackTrace();
-                    StringBuilder sb = new StringBuilder();
-                    int start = Math.min(3, st.length);
-                    int end   = Math.min(start + 8, st.length);
-                    for (int i = start; i < end; i++) {
-                        sb.append("\n    at ").append(st[i]);
-                    }
-                    Log.i(TAG, "FRAME-CMD: frameCommand(\"" + cmd + "\")" + sb);
-                }
-            });
-            Log.i(TAG, "SHORTCUT-GUARD: frameCommand diagnostic hook armed");
-        } catch (Throwable t) {
-            Log.w(TAG, "SHORTCUT-GUARD: could not hook frameCommand for diagnostics: " + t);
-        }
+        // Read dock-mode flag once at install time — not on every key event.
+        sNavigatorEnabled = readNavigatorEnabled();
+        Log.i(TAG, "SHORTCUT-GUARD: navigatorEnabled=" + sNavigatorEnabled);
 
         int hooked = XposedBridge.hookAllMethods(filterClass,
                 "interceptKeyEventPreFocusCheck", new XC_MethodHook() {
@@ -72,7 +53,7 @@ public final class KeyboardShortcutHook {
                         }
 
                         // VR mode: navigator enabled — let the original method run.
-                        if (readNavigatorEnabled()) return;
+                        if (sNavigatorEnabled) return;
 
                         // Dock mode: consume the event so it never reaches
                         // nativeFrameCommand unconditionally.
@@ -105,11 +86,8 @@ public final class KeyboardShortcutHook {
             Method isAlive      = app.getClass().getMethod("isAlive");
             Method frameCommand = app.getClass().getMethod("frameCommand", String.class);
             boolean alive = Boolean.TRUE.equals(isAlive.invoke(app));
-            Log.i(TAG, "SHORTCUT-GUARD: Meta UP — isAlive=" + alive);
             if (alive) {
-                Log.i(TAG, "SHORTCUT-GUARD: dispatching systemButtonPress...");
                 frameCommand.invoke(app, "systemButtonPress");
-                Log.i(TAG, "SHORTCUT-GUARD: systemButtonPress returned");
             }
         } catch (Throwable t) {
             Log.e(TAG, "SHORTCUT-GUARD: fireSystemButtonPress threw: " + t);

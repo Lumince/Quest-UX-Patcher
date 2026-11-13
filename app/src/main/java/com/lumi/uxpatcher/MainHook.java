@@ -18,7 +18,6 @@ import com.lumi.uxpatcher.systemux.DockStatus;
 import com.lumi.uxpatcher.systemux.DockPinLimitHook;
 import com.lumi.uxpatcher.systemux.DockScrollHook;
 import com.lumi.uxpatcher.systemux.DockWidenHook;
-import com.lumi.uxpatcher.systemux.DestinationUiSuppressHook;
 import com.lumi.uxpatcher.systemux.SecurityLockThemeHook;
 import com.lumi.uxpatcher.systemux.NotificationBadgeHook;
 import com.lumi.uxpatcher.systemux.NotificationRowsHook;
@@ -107,7 +106,6 @@ public class MainHook implements IXposedHookLoadPackage {
         Hooks.run("BATTERY", lp, BatteryPercentHook::install);
         Hooks.run("NOTIF-ROWS", lp, NotificationRowsHook::install);
         Hooks.run("NOTIF-BADGE", lp, NotificationBadgeHook::install);
-        Hooks.run("DEST-SUPPRESS", lp, DestinationUiSuppressHook::install);
         Hooks.run("SECURITY-LOCK", lp, SecurityLockThemeHook::install);
     }
 
